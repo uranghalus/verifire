@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
 }
 
 datasource db {
@@ -14,9 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// =====================
-// ENUMS
-// =====================
 enum Role {
   USER
   ADMIN
@@ -50,31 +40,26 @@ enum InspectionResult {
   PENDING
 }
 
-// =====================
-// AUTH MODELS (NextAuth compatible)
-// =====================
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  password      String? // optional, for credentials provider
+  password      String? // optional, only if you use Credentials provider
   role          Role      @default(USER)
   is_active     Boolean   @default(true)
 
-  // NextAuth relations
   accounts Account[]
   sessions Session[]
 
-  // app relations
-  apars                      apar[]                      @relation("user_apar")
-  hydrants                   hydrant[]                   @relation("user_hydrant")
-  inspections                inspection[]                @relation("user_inspections")
-  apar_inspection_details    apar_inspection_detail[]    @relation("user_apar_detail")
-  hydrant_inspection_details hydrant_inspection_detail[] @relation("user_hydrant_detail")
-  notifications              notification[]
-  audits                     audit[]
+  apars                      Apar[]                    @relation("user_apar")
+  hydrants                   Hydrant[]                 @relation("user_hydrant")
+  inspections                Inspection[]              @relation("user_inspections")
+  apar_inspection_details    AparInspectionDetail[]    @relation("user_apar_detail")
+  hydrant_inspection_details HydrantInspectionDetail[] @relation("user_hydrant_detail")
+  notifications              Notification[]
+  audits                     Audit[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -117,49 +102,10 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// =====================
-// LOCATION: MALL -> FLOOR -> ZONE
-// =====================
-model mall {
-  id      Int     @id @default(autoincrement())
-  name    String
-  address String?
-
-  floors floor[]
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-}
-
-model floor {
-  id      Int    @id @default(autoincrement())
-  name    String
-  mall_id Int
-  mall    mall   @relation(fields: [mall_id], references: [id], onDelete: Cascade)
-
-  zones zone[]
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-}
-
-model zone {
-  id       Int    @id @default(autoincrement())
-  name     String
-  floor_id Int
-  floor    floor  @relation(fields: [floor_id], references: [id], onDelete: Cascade)
-
-  apars    apar[]
-  hydrants hydrant[]
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-}
-
-// =====================
-// APAR (sesuai Laravel)
-// =====================
-model apar {
+/**
+ * DEVICES
+ */
+model Apar {
   id        Int       @id @default(autoincrement())
   kode_apar String    @unique
   lantai    String?
@@ -170,21 +116,14 @@ model apar {
   user_id String?
   user    User?   @relation("user_apar", fields: [user_id], references: [id], onDelete: SetNull)
 
-  zone_id Int?
-  zone    zone? @relation(fields: [zone_id], references: [id], onDelete: SetNull)
-
-  // relations
-  inspections apar_inspection_detail[]
+  inspections AparInspectionDetail[]
 
   created_at DateTime     @default(now())
   updated_at DateTime     @updatedAt
-  inspection inspection[]
+  inspection Inspection[]
 }
 
-// =====================
-// HYDRANT (sesuai Laravel)
-// =====================
-model hydrant {
+model Hydrant {
   id           Int     @id @default(autoincrement())
   kode_unik    String  @unique
   kode_hydrant String  @unique
@@ -195,67 +134,60 @@ model hydrant {
   user_id String?
   user    User?   @relation("user_hydrant", fields: [user_id], references: [id], onDelete: SetNull)
 
-  zone_id Int?
-  zone    zone? @relation(fields: [zone_id], references: [id], onDelete: SetNull)
-
-  // relations
-  inspections hydrant_inspection_detail[]
+  inspections HydrantInspectionDetail[]
 
   created_at DateTime     @default(now())
   updated_at DateTime     @updatedAt
-  inspection inspection[]
+  inspection Inspection[]
 }
 
-// =====================
-// INSPECTIONS (generik)
-// - menyimpan meta inspeksi
-// - bisa menunjuk ke apar_id atau hydrant_id (opsional)
-// - inspeksi detail berada di tabel terpisah
-// =====================
-model inspection {
+/**
+ * INSPECTION (meta)
+ */
+model Inspection {
   id Int @id @default(autoincrement())
 
   device_type DeviceType
-  apar_id     Int? // if device_type = APAR
-  hydrant_id  Int? // if device_type = HYDRANT
+  apar_id     Int?
+  hydrant_id  Int?
 
-  // relations to device (optional)
-  apar    apar?    @relation(fields: [apar_id], references: [id], onDelete: SetNull)
-  hydrant hydrant? @relation(fields: [hydrant_id], references: [id], onDelete: SetNull)
+  apar    Apar?    @relation(fields: [apar_id], references: [id], onDelete: SetNull)
+  hydrant Hydrant? @relation(fields: [hydrant_id], references: [id], onDelete: SetNull)
 
-  user_id String? // pemeriksa if linked to users table
+  user_id String?
   user    User?   @relation("user_inspections", fields: [user_id], references: [id], onDelete: SetNull)
 
-  nama_petugas     String? // free input name
+  nama_petugas     String?
   regu             Regu             @default(PAGI)
   result           InspectionResult @default(PENDING)
   notes            String?
-  photos           String? // JSON string or path (single) - adapt as needed
   tanggal_inspeksi DateTime         @default(now())
 
-  // one-to-one to specific details
-  apar_detail    apar_inspection_detail?
-  hydrant_detail hydrant_inspection_detail?
+  apar_detail    AparInspectionDetail?
+  hydrant_detail HydrantInspectionDetail?
+  photos         InspectionPhoto[]
 
   created_at DateTime @default(now())
-  updated_at DateTime @default(now()) // keep updated_at for consistency
+  updated_at DateTime @updatedAt
+
+  @@index([device_type, result])
+  @@index([tanggal_inspeksi])
 }
 
-// =====================
-// APAR INSPECTION DETAIL (detail terstruktur)
-// =====================
-model apar_inspection_detail {
+/**
+ * APAR DETAIL
+ */
+model AparInspectionDetail {
   id            Int        @id @default(autoincrement())
   inspection_id Int        @unique
-  inspection    inspection @relation(fields: [inspection_id], references: [id], onDelete: Cascade)
+  inspection    Inspection @relation(fields: [inspection_id], references: [id], onDelete: Cascade)
 
   apar_id Int?
-  apar    apar? @relation(fields: [apar_id], references: [id], onDelete: SetNull)
+  apar    Apar? @relation(fields: [apar_id], references: [id], onDelete: SetNull)
 
   user_id String?
   user    User?   @relation("user_apar_detail", fields: [user_id], references: [id], onDelete: SetNull)
 
-  // fields sesuai Laravel
   nama_petugas       String?
   regu               Regu      @default(PAGI)
   tanggal_kadaluarsa DateTime?
@@ -268,21 +200,20 @@ model apar_inspection_detail {
   updated_at DateTime @default(now())
 }
 
-// =====================
-// HYDRANT INSPECTION DETAIL (detail terstruktur)
-// =====================
-model hydrant_inspection_detail {
+/**
+ * HYDRANT DETAIL
+ */
+model HydrantInspectionDetail {
   id            Int        @id @default(autoincrement())
   inspection_id Int        @unique
-  inspection    inspection @relation(fields: [inspection_id], references: [id], onDelete: Cascade)
+  inspection    Inspection @relation(fields: [inspection_id], references: [id], onDelete: Cascade)
 
   hydrant_id Int?
-  hydrant    hydrant? @relation(fields: [hydrant_id], references: [id], onDelete: SetNull)
+  hydrant    Hydrant? @relation(fields: [hydrant_id], references: [id], onDelete: SetNull)
 
   user_id String?
   user    User?   @relation("user_hydrant_detail", fields: [user_id], references: [id], onDelete: SetNull)
 
-  // fields sesuai Laravel example
   nama_petugas               String?
   regu                       Regu    @default(PAGI)
   valve_machino_coupling     String?
@@ -299,10 +230,24 @@ model hydrant_inspection_detail {
   updated_at DateTime @default(now())
 }
 
-// =====================
-// NOTIFICATIONS & AUDIT
-// =====================
-model notification {
+/**
+ * PHOTOS - multi foto per inspeksi
+ */
+model InspectionPhoto {
+  id            Int        @id @default(autoincrement())
+  inspection_id Int
+  inspection    Inspection @relation(fields: [inspection_id], references: [id], onDelete: Cascade)
+  url           String
+  type          String? // 'before' | 'after' | 'detail'
+  created_at    DateTime   @default(now())
+
+  @@index([inspection_id])
+}
+
+/**
+ * NOTIFICATIONS & AUDIT
+ */
+model Notification {
   id      Int     @id @default(autoincrement())
   user_id String?
   user    User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
@@ -314,7 +259,7 @@ model notification {
   created_at DateTime @default(now())
 }
 
-model audit {
+model Audit {
   id        Int     @id @default(autoincrement())
   user_id   String?
   user      User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
