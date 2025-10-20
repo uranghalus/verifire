@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -63,6 +64,10 @@ model User {
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("user")
 }
 
 model Account {
@@ -81,7 +86,19 @@ model Account {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  accountId             String    @db.Text
+  providerId            String    @db.Text
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
   @@unique([provider, providerAccountId])
+  @@map("account")
 }
 
 model Session {
@@ -90,7 +107,16 @@ model Session {
   userId       String
   expires      DateTime
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?  @db.Text
+  userAgent String?  @db.Text
+
+  @@unique([token])
+  @@map("session")
 }
 
 model VerificationToken {
@@ -102,9 +128,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-/**
- * DEVICES
- */
 model Apar {
   id        Int       @id @default(autoincrement())
   kode_apar String    @unique
@@ -141,9 +164,6 @@ model Hydrant {
   inspection Inspection[]
 }
 
-/**
- * INSPECTION (meta)
- */
 model Inspection {
   id Int @id @default(autoincrement())
 
@@ -174,9 +194,6 @@ model Inspection {
   @@index([tanggal_inspeksi])
 }
 
-/**
- * APAR DETAIL
- */
 model AparInspectionDetail {
   id            Int        @id @default(autoincrement())
   inspection_id Int        @unique
@@ -200,9 +217,6 @@ model AparInspectionDetail {
   updated_at DateTime @default(now())
 }
 
-/**
- * HYDRANT DETAIL
- */
 model HydrantInspectionDetail {
   id            Int        @id @default(autoincrement())
   inspection_id Int        @unique
@@ -230,9 +244,6 @@ model HydrantInspectionDetail {
   updated_at DateTime @default(now())
 }
 
-/**
- * PHOTOS - multi foto per inspeksi
- */
 model InspectionPhoto {
   id            Int        @id @default(autoincrement())
   inspection_id Int
@@ -244,9 +255,6 @@ model InspectionPhoto {
   @@index([inspection_id])
 }
 
-/**
- * NOTIFICATIONS & AUDIT
- */
 model Notification {
   id      Int     @id @default(autoincrement())
   user_id String?
@@ -270,4 +278,15 @@ model Audit {
   after     Json?
 
   created_at DateTime @default(now())
+}
+
+model Verification {
+  id         String   @id
+  identifier String   @db.Text
+  value      String   @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("verification")
 }
