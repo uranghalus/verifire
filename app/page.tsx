@@ -1,6 +1,8 @@
+
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Logo from "./assets/logo";
+import SigninForm from "@/components/auth/sign-in-form";
 
 export default function Home() {
   return (
@@ -19,7 +21,8 @@ export default function Home() {
               Masukkan email dan kata sandi Anda di bawah ini <br /> untuk masuk ke akun Anda
             </p>
           </div>
-          {/* <UserAuthForm /> */}
+
+          <SigninForm />
           <p className='text-muted-foreground px-8 text-center text-sm'>
             Dengan mengklik masuk, Anda menyetujui{' '}
             <a

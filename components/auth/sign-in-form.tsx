@@ -1,110 +1,157 @@
+'use client'
 import React, { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import z from 'zod'
 import { useForm } from 'react-hook-form'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form'
-import { cn } from '@/lib/utils'
 import { Button } from '../ui/button'
 import { PasswordInput } from '../password-input'
+import { Input } from '../ui/input'
+import { Facebook, GitBranch } from 'lucide-react'
+import { authClient } from '@/lib/auth-client'
+import Link from 'next/link'
+import { Checkbox } from '../ui/checkbox'
+import { toast } from 'sonner'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const formSchema = z
     .object({
-        email: z.email({
-            error: (iss) =>
-                iss.input === '' ? 'Please enter your email' : undefined,
-        }),
-        password: z
-            .string()
-            .min(1, 'Please enter your password')
-            .min(7, 'Password must be at least 7 characters long'),
+        email: z.email({ message: "Please enter a valid email" }),
+        password: z.string().min(1, { message: "Password is required" }),
+        rememberMe: z.boolean().optional(),
     })
+type SignInValues = z.infer<typeof formSchema>;
 export default function SigninForm({ className, ...props }: React.HTMLAttributes<HTMLFormElement>) {
     const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null);
 
-    const form = useForm<z.infer<typeof formSchema>>({
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const redirect = searchParams.get("redirect");
+
+    const form = useForm<SignInValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             email: '',
             password: '',
         },
     })
-    function onSubmit(data: z.infer<typeof formSchema>) {
-        setIsLoading(true)
-        // eslint-disable-next-line no-console
-        console.log(data)
+    async function onSubmit({ email, password, rememberMe }: SignInValues) {
+        setIsLoading(true);
 
-        setTimeout(() => {
-            setIsLoading(false)
-        }, 3000)
+        const { error } = await authClient.signIn.email({
+            email,
+            password,
+            rememberMe,
+        });
+
+        setIsLoading(false);
+
+        if (error) {
+            setError(error.message || "Something went wrong");
+        } else {
+            toast.success("Signed in successfully");
+            router.push(redirect ?? "/dashboard");
+        }
     }
 
     return (
         <Form {...form}>
-            <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className={cn('grid gap-3', className)}
-                {...props}
-            >
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                     control={form.control}
-                    name='email'
+                    name="email"
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                                <Input placeholder='name@example.com' {...field} />
+                                <Input
+                                    type="email"
+                                    placeholder="your@email.com"
+                                    {...field}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+
                 <FormField
                     control={form.control}
-                    name='password'
+                    name="password"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <div className="flex items-center">
+                                <FormLabel>Password</FormLabel>
+                                <Link
+                                    href="/forgot-password"
+                                    className="ml-auto inline-block text-sm underline"
+                                >
+                                    Forgot your password?
+                                </Link>
+                            </div>
                             <FormControl>
-                                <PasswordInput placeholder='********' {...field} />
+                                <PasswordInput
+                                    autoComplete="current-password"
+                                    placeholder="Password"
+                                    {...field}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
 
-                <Button className='mt-2' disabled={isLoading}>
-                    Create Account
+                <FormField
+                    control={form.control}
+                    name="rememberMe"
+                    render={({ field }) => (
+                        <FormItem className="flex items-center gap-2">
+                            <FormControl>
+                                <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <FormLabel>Remember me</FormLabel>
+                        </FormItem>
+                    )}
+                />
+
+                {error && (
+                    <div role="alert" className="text-sm text-red-600">
+                        {error}
+                    </div>
+                )}
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    Login
                 </Button>
 
-                <div className='relative my-2'>
-                    <div className='absolute inset-0 flex items-center'>
-                        <span className='w-full border-t' />
-                    </div>
-                    <div className='relative flex justify-center text-xs uppercase'>
-                        <span className='bg-background text-muted-foreground px-2'>
-                            Or continue with
-                        </span>
-                    </div>
-                </div>
+                {/* <div className="flex w-full flex-col items-center justify-between gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full gap-2"
+                        disabled={loading}
+                        onClick={() => handleSocialSignIn("google")}
+                    >
+                        <GoogleIcon width="0.98em" height="1em" />
+                        Sign in with Google
+                    </Button>
 
-                <div className='grid grid-cols-2 gap-2'>
                     <Button
-                        variant='outline'
-                        className='w-full'
-                        type='button'
-                        disabled={isLoading}
+                        type="button"
+                        variant="outline"
+                        className="w-full gap-2"
+                        disabled={loading}
+                        onClick={() => handleSocialSignIn("github")}
                     >
-                        <IconGithub className='h-4 w-4' /> GitHub
+                        <GitHubIcon />
+                        Sign in with Github
                     </Button>
-                    <Button
-                        variant='outline'
-                        className='w-full'
-                        type='button'
-                        disabled={isLoading}
-                    >
-                        <IconFacebook className='h-4 w-4' /> Facebook
-                    </Button>
-                </div>
+                </div> */}
             </form>
         </Form>
     )
