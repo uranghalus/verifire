@@ -4,42 +4,62 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  // Hash password pakai bcrypt (Better Auth juga pakai ini)
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  const userPassword = await bcrypt.hash('user123', 10);
+  console.log('🌱 Starting seed process...');
 
-  // Seeder admin
-  await prisma.user.upsert({
-    where: { email: 'admin@appdutamall.com' },
-    update: {},
-    create: {
-      name: 'Admin',
-      email: 'admin@appdutamall.com',
-      password: adminPassword,
-      role: 'SUPERADMIN',
-      is_active: true,
-    },
+  // Cek apakah sudah ada SUPERADMIN
+  const existingSuperadmin = await prisma.user.findFirst({
+    where: { role: 'SUPERADMIN' },
   });
+
+  if (!existingSuperadmin) {
+    const adminPassword = await bcrypt.hash('admin123', 10);
+
+    await prisma.user.create({
+      data: {
+        name: 'Admin',
+        email: 'admin@appdutamall.com',
+        password: adminPassword,
+        role: 'SUPERADMIN',
+        is_active: true,
+      },
+    });
+
+    console.log(
+      '✅ Superadmin account created (admin@appdutamall.com / admin123)'
+    );
+  } else {
+    console.log('ℹ️ Superadmin already exists, skipping creation.');
+  }
 
   // Seeder user biasa
-  await prisma.user.upsert({
+  const existingUser = await prisma.user.findUnique({
     where: { email: 'user@example.com' },
-    update: {},
-    create: {
-      name: 'User',
-      email: 'user@example.com',
-      password: userPassword,
-      role: 'USER',
-      is_active: true,
-    },
   });
 
-  console.log('✅ Users seeded successfully');
+  if (!existingUser) {
+    const userPassword = await bcrypt.hash('user123', 10);
+
+    await prisma.user.create({
+      data: {
+        name: 'User',
+        email: 'user@example.com',
+        password: userPassword,
+        role: 'USER',
+        is_active: true,
+      },
+    });
+
+    console.log('✅ Regular user created (user@example.com / user123)');
+  } else {
+    console.log('ℹ️ Regular user already exists, skipping creation.');
+  }
+
+  console.log('🌱 Seeding completed successfully.');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error seeding users:', e);
+    console.error('❌ Error during seeding:', e);
     process.exit(1);
   })
   .finally(async () => {
