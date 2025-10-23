@@ -1,65 +1,74 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+async function createUserWithCredentials(
+  email: string,
+  name: string,
+  password: string,
+  role: Role
+) {
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    console.log(`ℹ️ User ${email} already exists, skipping.`);
+    return;
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      email,
+      name,
+      password: hashedPassword,
+      role,
+      is_active: true,
+      accounts: {
+        create: {
+          type: 'credentials',
+          provider: 'credentials',
+          providerAccountId: email,
+
+          // field wajib tambahan
+          accountId: email, // bisa pakai email atau cuid
+          providerId: 'credentials', // cocokkan dengan provider
+          password: hashedPassword,
+
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+    },
+  });
+
+  console.log(`✅ Created user: ${email} (${role})`);
+  return user;
+}
+
 async function main() {
-  console.log('🌱 Starting seed process...');
+  console.log('🌱 Seeding users...');
 
-  // Cek apakah sudah ada SUPERADMIN
-  const existingSuperadmin = await prisma.user.findFirst({
-    where: { role: 'SUPERADMIN' },
-  });
+  await createUserWithCredentials(
+    'admin@appdutamall.com',
+    'Admin',
+    'admin123',
+    'SUPERADMIN'
+  );
 
-  if (!existingSuperadmin) {
-    const adminPassword = await bcrypt.hash('admin123', 10);
+  await createUserWithCredentials(
+    'user@example.com',
+    'User',
+    'user123',
+    'USER'
+  );
 
-    await prisma.user.create({
-      data: {
-        name: 'Admin',
-        email: 'admin@appdutamall.com',
-        password: adminPassword,
-        role: 'SUPERADMIN',
-        is_active: true,
-      },
-    });
-
-    console.log(
-      '✅ Superadmin account created (admin@appdutamall.com / admin123)'
-    );
-  } else {
-    console.log('ℹ️ Superadmin already exists, skipping creation.');
-  }
-
-  // Seeder user biasa
-  const existingUser = await prisma.user.findUnique({
-    where: { email: 'user@example.com' },
-  });
-
-  if (!existingUser) {
-    const userPassword = await bcrypt.hash('user123', 10);
-
-    await prisma.user.create({
-      data: {
-        name: 'User',
-        email: 'user@example.com',
-        password: userPassword,
-        role: 'USER',
-        is_active: true,
-      },
-    });
-
-    console.log('✅ Regular user created (user@example.com / user123)');
-  } else {
-    console.log('ℹ️ Regular user already exists, skipping creation.');
-  }
-
-  console.log('🌱 Seeding completed successfully.');
+  console.log('✅ Seeding complete.');
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Error during seeding:', e);
+  .catch((err) => {
+    console.error('❌ Seeding error:', err);
     process.exit(1);
   })
   .finally(async () => {
