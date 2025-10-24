@@ -1,5 +1,6 @@
+// prisma/seed.ts
 import { PrismaClient, Role } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import { auth } from '../lib/auth';
 
 const prisma = new PrismaClient();
 
@@ -7,7 +8,8 @@ async function createUserWithCredentials(
   email: string,
   name: string,
   password: string,
-  role: Role
+  role: Role,
+  emailVerified = true
 ) {
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
@@ -15,52 +17,43 @@ async function createUserWithCredentials(
     return;
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  // Map internal roles to Better Auth expected roles
+  const authRole: 'admin' | 'user' =
+    role === Role.superadmin ? 'admin' : 'user';
 
-  const user = await prisma.user.create({
-    data: {
+  // Gunakan API internal Better Auth (ini bekerja di Node)
+  const { user } = await auth.api.createUser({
+    body: {
       email,
+      password,
       name,
-      password: hashedPassword,
-      role,
-      is_active: true,
-      accounts: {
-        create: {
-          type: 'credentials',
-          provider: 'credentials',
-          providerAccountId: email,
-
-          // field wajib tambahan
-          accountId: email, // bisa pakai email atau cuid
-          providerId: 'credentials', // cocokkan dengan provider
-          password: hashedPassword,
-
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      },
+      role: authRole,
+      data: { emailVerified, isActive: true, type: 'credentials' }, // pass emailVerified inside `data` since it's not a top-level property
     },
   });
 
-  console.log(`✅ Created user: ${email} (${role})`);
-  return user;
+  if (!user) {
+    console.error(`❌ Gagal membuat user ${email}:`, user);
+  } else {
+    console.log(`✅ Created user ${user} (${authRole})`);
+  }
 }
 
 async function main() {
-  console.log('🌱 Seeding users...');
+  console.log('🌱 Seeding users via Better Auth...');
 
   await createUserWithCredentials(
     'admin@appdutamall.com',
     'Admin',
     'admin123',
-    'SUPERADMIN'
+    Role.superadmin
   );
 
   await createUserWithCredentials(
     'user@example.com',
     'User',
     'user123',
-    'USER'
+    Role.user
   );
 
   console.log('✅ Seeding complete.');
