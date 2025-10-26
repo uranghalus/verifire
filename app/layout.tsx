@@ -6,6 +6,7 @@ import { FontProvider } from "@/context/font-provider";
 
 import { QueryProvider } from "@/context/query-provider";
 import { DirectionProvider } from "@/context/direction-provider";
+import ToastProvider from "@/context/toast-providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
           <ThemeProvider>
             <FontProvider>
               <DirectionProvider >
+                <ToastProvider />
                 {children}
               </DirectionProvider>
             </FontProvider>

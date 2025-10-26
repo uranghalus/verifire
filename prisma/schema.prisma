@@ -1,5 +1,12 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -7,272 +14,58 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  user
-  admin
-  superadmin
-  manager
-  inspector
-  viewer
-}
-
-enum Regu {
-  PAGI
-  SIANG
-  MALAM
-  MIDDLE
-}
-
-enum JenisApar {
-  CO2
-  POWDER
-  FOAM
-  AIR
-}
-
-enum DeviceType {
-  APAR
-  HYDRANT
-}
-
-enum InspectionResult {
-  PASSED
-  FAILED
-  PENDING
-}
-
 model User {
-  id            String   @id @default(cuid())
-  name          String?
-  email         String?  @unique
-  emailVerified Boolean? @default(false)
-  image         String?
-  password      String? // optional, only if you use Credentials provider
-  role          Role     @default(user)
-  is_active     Boolean  @default(true)
+  id            String    @id
+  name          String    @db.Text
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  role          String?   @db.Text
+  banned        Boolean?  @default(false)
+  banReason     String?   @db.Text
+  banExpires    DateTime?
+  sessions      Session[]
+  accounts      Account[]
 
-  accounts Account[]
-  sessions Session[]
-
-  apars                      Apar[]                    @relation("user_apar")
-  hydrants                   Hydrant[]                 @relation("user_hydrant")
-  inspections                Inspection[]              @relation("user_inspections")
-  apar_inspection_details    AparInspectionDetail[]    @relation("user_apar_detail")
-  hydrant_inspection_details HydrantInspectionDetail[] @relation("user_hydrant_detail")
-  notifications              Notification[]
-  audits                     Audit[]
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
-
-  banned     Boolean?  @default(false)
-  banReason  String?   @db.Text
-  banExpires DateTime?
-
+  @@unique([email])
   @@map("user")
 }
 
-model Account {
-  id                    String    @id @default(cuid())
-  userId                String
-  type                  String
-  providerId            String
-  accountId             String
-  password              String?   @db.Text
-  accessToken           String?   @db.Text
-  refreshToken          String?   @db.Text
-  idToken               String?   @db.Text
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("account")
-}
-
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  token     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String?  @db.Text
-  userAgent String?  @db.Text
-
-  impersonatedBy String? @db.Text
+  id             String   @id
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?  @db.Text
+  userAgent      String?  @db.Text
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?  @db.Text
 
   @@unique([token])
   @@map("session")
 }
 
-model VerificationToken {
-  id         String   @id @default(cuid())
-  identifier String
-  token      String   @unique
-  expires    DateTime
+model Account {
+  id                    String    @id
+  accountId             String    @db.Text
+  providerId            String    @db.Text
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?   @db.Text
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
-  @@unique([identifier, token])
-}
-
-model Apar {
-  id        Int       @id @default(autoincrement())
-  kode_apar String    @unique
-  lantai    String?
-  lokasi    String
-  jenis     JenisApar
-  size      Float
-
-  user_id String?
-  user    User?   @relation("user_apar", fields: [user_id], references: [id], onDelete: SetNull)
-
-  inspections AparInspectionDetail[]
-
-  created_at DateTime     @default(now())
-  updated_at DateTime     @updatedAt
-  inspection Inspection[]
-}
-
-model Hydrant {
-  id           Int     @id @default(autoincrement())
-  kode_unik    String  @unique
-  kode_hydrant String  @unique
-  ukuran       String
-  lantai       String?
-  lokasi       String
-
-  user_id String?
-  user    User?   @relation("user_hydrant", fields: [user_id], references: [id], onDelete: SetNull)
-
-  inspections HydrantInspectionDetail[]
-
-  created_at DateTime     @default(now())
-  updated_at DateTime     @updatedAt
-  inspection Inspection[]
-}
-
-model Inspection {
-  id Int @id @default(autoincrement())
-
-  device_type DeviceType
-  apar_id     Int?
-  hydrant_id  Int?
-
-  apar    Apar?    @relation(fields: [apar_id], references: [id], onDelete: SetNull)
-  hydrant Hydrant? @relation(fields: [hydrant_id], references: [id], onDelete: SetNull)
-
-  user_id String?
-  user    User?   @relation("user_inspections", fields: [user_id], references: [id], onDelete: SetNull)
-
-  nama_petugas     String?
-  regu             Regu             @default(PAGI)
-  result           InspectionResult @default(PENDING)
-  notes            String?
-  tanggal_inspeksi DateTime         @default(now())
-
-  apar_detail    AparInspectionDetail?
-  hydrant_detail HydrantInspectionDetail?
-  photos         InspectionPhoto[]
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  @@index([device_type, result])
-  @@index([tanggal_inspeksi])
-}
-
-model AparInspectionDetail {
-  id            Int        @id @default(autoincrement())
-  inspection_id Int        @unique
-  inspection    Inspection @relation(fields: [inspection_id], references: [id], onDelete: Cascade)
-
-  apar_id Int?
-  apar    Apar? @relation(fields: [apar_id], references: [id], onDelete: SetNull)
-
-  user_id String?
-  user    User?   @relation("user_apar_detail", fields: [user_id], references: [id], onDelete: SetNull)
-
-  nama_petugas       String?
-  regu               Regu      @default(PAGI)
-  tanggal_kadaluarsa DateTime?
-  tanggal_refill     DateTime?
-  kondisi            String?
-  catatan            String?
-  foto_apar          String?
-
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
-}
-
-model HydrantInspectionDetail {
-  id            Int        @id @default(autoincrement())
-  inspection_id Int        @unique
-  inspection    Inspection @relation(fields: [inspection_id], references: [id], onDelete: Cascade)
-
-  hydrant_id Int?
-  hydrant    Hydrant? @relation(fields: [hydrant_id], references: [id], onDelete: SetNull)
-
-  user_id String?
-  user    User?   @relation("user_hydrant_detail", fields: [user_id], references: [id], onDelete: SetNull)
-
-  nama_petugas               String?
-  regu                       Regu    @default(PAGI)
-  valve_machino_coupling     String?
-  fire_hose_machino_coupling String?
-  selang_hydrant             String?
-  noozle_hydrant             String?
-  kaca_box_hydrant           String?
-  kunci_box_hydrant          String?
-  box_hydrant                String?
-  alarm                      String?
-  foto_hydrant               String?
-
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
-}
-
-model InspectionPhoto {
-  id            Int        @id @default(autoincrement())
-  inspection_id Int
-  inspection    Inspection @relation(fields: [inspection_id], references: [id], onDelete: Cascade)
-  url           String
-  type          String? // 'before' | 'after' | 'detail'
-  created_at    DateTime   @default(now())
-
-  @@index([inspection_id])
-}
-
-model Notification {
-  id      Int     @id @default(autoincrement())
-  user_id String?
-  user    User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
-  title   String
-  body    String
-  is_read Boolean @default(false)
-  meta    Json?
-
-  created_at DateTime @default(now())
-}
-
-model Audit {
-  id        Int     @id @default(autoincrement())
-  user_id   String?
-  user      User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
-  action    String
-  entity    String
-  entity_id String?
-  before    Json?
-  after     Json?
-
-  created_at DateTime @default(now())
+  @@map("account")
 }
 
 model Verification {
