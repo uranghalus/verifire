@@ -10,7 +10,7 @@ export const auth = betterAuth({
     enabled: true,
     autoSignIn: false,
   },
-
+  trustedOrigins: ['http://192.168.91.37:3000'],
   plugins: [
     admin({
       adminRoles: ['admin', 'superadmin'],

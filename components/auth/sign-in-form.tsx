@@ -7,7 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Button } from '../ui/button'
 import { PasswordInput } from '../password-input'
 import { Input } from '../ui/input'
-import { Facebook, GitBranch } from 'lucide-react'
+import { Facebook, GitBranch, LoaderCircle } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import Link from 'next/link'
 import { Checkbox } from '../ui/checkbox'
@@ -58,7 +58,7 @@ export default function SigninForm({ className, ...props }: React.HTMLAttributes
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:px-4 px-4 ">
                 <FormField
                     control={form.control}
                     name="email"
@@ -127,6 +127,7 @@ export default function SigninForm({ className, ...props }: React.HTMLAttributes
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                     Login
+                    <LoaderCircle className='me-2 animate-spin' style={{ display: isLoading ? 'inline-block' : 'none' }} />
                 </Button>
 
                 {/* <div className="flex w-full flex-col items-center justify-between gap-2">
