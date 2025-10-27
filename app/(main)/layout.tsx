@@ -1,44 +1,23 @@
-'use client'
 
-import { getCookie } from '@/lib/cookies'
-import { cn } from '@/lib/utils'
-import { LayoutProvider } from '@/context/layout-provider'
-import { SearchProvider } from '@/context/search-provider'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import AuthenticatedLayout from '@/components/layout/authenticated-layout'
+import { getServerSession } from '@/lib/get-session'
+import { unauthorized } from 'next/navigation'
+import React from 'react'
 
-import { useEffect, useState } from 'react'
-import { AppSidebar } from '@/components/app-sidebar'
-
-type AuthenticatedLayoutProps = {
+interface MainLayoutProps {
     children?: React.ReactNode
 }
+export default async function MainLayout({ children }: MainLayoutProps) {
 
-export default function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
-    // 🧠 Karena document.cookie hanya tersedia di client, kita pakai state
-    const [defaultOpen, setDefaultOpen] = useState(true)
+    const session = await getServerSession()
 
-    useEffect(() => {
-        const cookieValue = getCookie('sidebar_state')
-        setDefaultOpen(cookieValue !== 'false')
-    }, [])
-
+    if (!session?.user) unauthorized()
+    const user = session.user
     return (
-        <SearchProvider>
-            <LayoutProvider>
-                <SidebarProvider defaultOpen={defaultOpen}>
-                    {/* <SkipToMain /> */}
-                    <AppSidebar />
-                    <SidebarInset
-                        className={cn(
-                            '@container/content',
-                            'has-[[data-layout=fixed]]:h-svh',
-                            'peer-data-[variant=inset]:has-[[data-layout=fixed]]:h-[calc(100svh-(var(--spacing)*4))]'
-                        )}
-                    >
-                        {children}
-                    </SidebarInset>
-                </SidebarProvider>
-            </LayoutProvider>
-        </SearchProvider>
+        <AuthenticatedLayout user={
+            user
+        }>
+            {children}
+        </AuthenticatedLayout>
     )
 }

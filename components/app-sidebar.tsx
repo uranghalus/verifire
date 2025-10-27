@@ -15,9 +15,12 @@ import { NavGroup } from './nav-group'
 import { sidebarData } from '@/data/sidebar-data'
 import { NavUser } from './nav-user'
 import { TeamSwitcher } from './team-switcher'
+import { User } from 'better-auth'
 // import { AppTitle } from './app-title'
-
-export function AppSidebar() {
+interface SidebarProps {
+    user: User
+}
+export function AppSidebar({ user }: SidebarProps) {
     const { collapsible, variant } = useLayout()
 
     return (
@@ -40,7 +43,7 @@ export function AppSidebar() {
 
             {/* === Footer (User Info) === */}
             <SidebarFooter>
-                <NavUser user={sidebarData.user} />
+                <NavUser user={user} />
             </SidebarFooter>
 
             {/* === Sidebar Rail (untuk mode collapsed) === */}
