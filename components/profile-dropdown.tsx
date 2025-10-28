@@ -16,22 +16,10 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-import { authClient } from '@/lib/auth-client' // pastikan path sesuai
 import { SignOutDialog } from './auth/signout-dialog'
 
 export function ProfileDropdown() {
     const [open, setOpen] = useDialogState()
-    const router = useRouter()
-
-    async function handleSignOut() {
-        await authClient.signOut({
-            fetchOptions: {
-                onSuccess: () => {
-                    router.push('/login') // redirect ke halaman login
-                },
-            },
-        })
-    }
 
     return (
         <>
