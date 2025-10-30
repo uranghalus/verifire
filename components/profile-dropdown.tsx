@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import useDialogState from '@/hooks/use-dialog-state'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -17,8 +16,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import { SignOutDialog } from './auth/signout-dialog'
-
-export function ProfileDropdown() {
+import { User } from 'better-auth'
+interface ProfileDropdownProps {
+    user: User
+}
+export function ProfileDropdown({ user }: ProfileDropdownProps) {
     const [open, setOpen] = useDialogState()
 
     return (
@@ -30,9 +32,11 @@ export function ProfileDropdown() {
                         className="relative h-8 w-8 rounded-full"
                         aria-label="User menu"
                     >
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src="/avatars/01.png" alt="@shadcn" />
-                            <AvatarFallback>SN</AvatarFallback>
+                        <Avatar className="h-8 w-8 rounded-lg">
+                            <AvatarImage src={user.image ?? ''} alt={user.name} />
+                            <AvatarFallback className="rounded-lg">
+                                {user.name?.[0]?.toUpperCase() ?? 'U'}
+                            </AvatarFallback>
                         </Avatar>
                     </Button>
                 </DropdownMenuTrigger>
@@ -40,9 +44,9 @@ export function ProfileDropdown() {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col gap-1.5">
-                            <p className="text-sm font-medium leading-none">satnaing</p>
+                            <p className="text-sm font-medium leading-none">{user.name}</p>
                             <p className="text-xs text-muted-foreground leading-none">
-                                satnaingdev@gmail.com
+                                {user.email}
                             </p>
                         </div>
                     </DropdownMenuLabel>

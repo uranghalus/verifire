@@ -1,27 +1,10 @@
 import {
-  Construction,
   LayoutDashboard,
-  Monitor,
-  Bug,
   ListTodo,
-  FileX,
-  HelpCircle,
-  Lock,
-  Bell,
-  Package,
-  Palette,
-  ServerOff,
-  Settings,
-  Wrench,
-  UserCog,
-  UserX,
-  Users,
-  MessagesSquare,
-  ShieldCheck,
-  AudioWaveform,
   Command,
-  GalleryVerticalEnd,
-  LogIn,
+  FireExtinguisher,
+  DatabaseZap,
+  UserCog2,
 } from 'lucide-react';
 // import { ClerkLogo } from '@/assets/clerk-logo';
 import { SidebarData } from '@/types';
@@ -38,16 +21,6 @@ export const sidebarData: SidebarData = {
       logo: Command,
       plan: 'Vite + ShadcnUI',
     },
-    {
-      name: 'Acme Inc',
-      logo: GalleryVerticalEnd,
-      plan: 'Enterprise',
-    },
-    {
-      name: 'Acme Corp.',
-      logo: AudioWaveform,
-      plan: 'Startup',
-    },
   ],
   navGroups: [
     {
@@ -55,150 +28,84 @@ export const sidebarData: SidebarData = {
       items: [
         {
           title: 'Dashboard',
-          url: '/',
+          url: '/dashboard',
           icon: LayoutDashboard,
         },
         {
-          title: 'Tasks',
-          url: '/tasks',
+          title: 'Role Management',
+          icon: UserCog2,
+          items: [
+            {
+              title: 'Permission List',
+              url: '/role-management/permission-list',
+            },
+            {
+              title: 'Role List',
+              url: '/role-management/role-list',
+            },
+          ],
+        },
+        {
+          title: 'Data Master',
+          icon: DatabaseZap,
+          items: [
+            {
+              title: 'Data Pengguna',
+              url: '/master-data/pengguna',
+            },
+            {
+              title: 'Data Departemen',
+              url: '/master-data/departemen',
+            },
+            {
+              title: 'Data Jabatan',
+              url: '/master-data/jabatan',
+            },
+            {
+              title: 'Data Unit Bisnis',
+              url: '/master-data/unit-bisnis',
+            },
+            {
+              title: 'Data Karyawan',
+              url: '/master-data/karyawan',
+            },
+          ],
+        },
+        {
+          title: 'Data Fire Safety',
+          icon: FireExtinguisher,
+          items: [
+            {
+              title: 'Data CP Security',
+              url: '/fire-safety/cekpoin-security',
+            },
+            {
+              title: 'Data Apar',
+              url: '/fire-safety/apar',
+            },
+            {
+              title: 'Data Hydrant',
+              url: '/fire-safety/hydrant',
+            },
+          ],
+        },
+        {
+          title: 'Data Inspeksi',
           icon: ListTodo,
-        },
-        {
-          title: 'Apps',
-          url: '/apps',
-          icon: Package,
-        },
-        {
-          title: 'Chats',
-          url: '/chats',
-          badge: '3',
-          icon: MessagesSquare,
-        },
-        {
-          title: 'Users',
-          url: '/users',
-          icon: Users,
-        },
-        {
-          title: 'Secured by Clerk',
-          icon: LogIn,
           items: [
             {
-              title: 'Sign In',
-              url: '/clerk/sign-in',
+              title: 'Inspeksi Apar',
+              url: '/inspection/apar',
             },
             {
-              title: 'Sign Up',
-              url: '/clerk/sign-up',
+              title: 'Inspeksi Hydrant',
+              url: '/inspection/hydrant',
             },
             {
-              title: 'User Management',
-              url: '/clerk/user-management',
+              title: 'Inspeksi Cekpoint',
+              url: '/inspection/cekpoint-security',
             },
           ],
-        },
-      ],
-    },
-    {
-      title: 'Pages',
-      items: [
-        {
-          title: 'Auth',
-          icon: ShieldCheck,
-          items: [
-            {
-              title: 'Sign In',
-              url: '/sign-in',
-            },
-            {
-              title: 'Sign In (2 Col)',
-              url: '/sign-in-2',
-            },
-            {
-              title: 'Sign Up',
-              url: '/sign-up',
-            },
-            {
-              title: 'Forgot Password',
-              url: '/forgot-password',
-            },
-            {
-              title: 'OTP',
-              url: '/otp',
-            },
-          ],
-        },
-        {
-          title: 'Errors',
-          icon: Bug,
-          items: [
-            {
-              title: 'Unauthorized',
-              url: '/errors/unauthorized',
-              icon: Lock,
-            },
-            {
-              title: 'Forbidden',
-              url: '/errors/forbidden',
-              icon: UserX,
-            },
-            {
-              title: 'Not Found',
-              url: '/errors/not-found',
-              icon: FileX,
-            },
-            {
-              title: 'Internal Server Error',
-              url: '/errors/internal-server-error',
-              icon: ServerOff,
-            },
-            {
-              title: 'Maintenance Error',
-              url: '/errors/maintenance-error',
-              icon: Construction,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Other',
-      items: [
-        {
-          title: 'Settings',
-          icon: Settings,
-          items: [
-            {
-              title: 'Profile',
-              url: '/settings',
-              icon: UserCog,
-            },
-            {
-              title: 'Account',
-              url: '/settings/account',
-              icon: Wrench,
-            },
-            {
-              title: 'Appearance',
-              url: '/settings/appearance',
-              icon: Palette,
-            },
-            {
-              title: 'Notifications',
-              url: '/settings/notifications',
-              icon: Bell,
-            },
-            {
-              title: 'Display',
-              url: '/settings/display',
-              icon: Monitor,
-            },
-          ],
-        },
-        {
-          title: 'Help Center',
-          url: '/help-center',
-          icon: HelpCircle,
         },
       ],
     },

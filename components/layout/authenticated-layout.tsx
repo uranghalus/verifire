@@ -9,6 +9,10 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { useEffect, useState } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { User } from 'better-auth'
+import { Header } from '../header'
+import { Search } from '../search'
+import { ThemeSwitch } from '../theme-switcher'
+import { ProfileDropdown } from '../profile-dropdown'
 
 type AuthenticatedLayoutProps = {
     children?: React.ReactNode
@@ -36,7 +40,13 @@ export default function AuthenticatedLayout({ children, user }: AuthenticatedLay
                             'has-[[data-layout=fixed]]:h-svh',
                             'peer-data-[variant=inset]:has-[[data-layout=fixed]]:h-[calc(100svh-(var(--spacing)*4))]'
                         )}
-                    >
+                    ><Header>
+                            <div className="ms-auto flex items-center space-x-4">
+                                <Search />
+                                <ThemeSwitch />
+                                <ProfileDropdown user={user} />
+                            </div>
+                        </Header>
                         {children}
                     </SidebarInset>
                 </SidebarProvider>
