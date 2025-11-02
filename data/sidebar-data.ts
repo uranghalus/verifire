@@ -53,22 +53,22 @@ export const sidebarData: SidebarData = {
               title: 'Data Pengguna',
               url: '/master-data/pengguna',
             },
-            {
-              title: 'Data Departemen',
-              url: '/master-data/departemen',
-            },
-            {
-              title: 'Data Jabatan',
-              url: '/master-data/jabatan',
-            },
-            {
-              title: 'Data Unit Bisnis',
-              url: '/master-data/unit-bisnis',
-            },
-            {
-              title: 'Data Karyawan',
-              url: '/master-data/karyawan',
-            },
+            // {
+            //   title: 'Data Departemen',
+            //   url: '/master-data/departemen',
+            // },
+            // {
+            //   title: 'Data Jabatan',
+            //   url: '/master-data/jabatan',
+            // },
+            // {
+            //   title: 'Data Unit Bisnis',
+            //   url: '/master-data/unit-bisnis',
+            // },
+            // {
+            //   title: 'Data Karyawan',
+            //   url: '/master-data/karyawan',
+            // },
           ],
         },
         {

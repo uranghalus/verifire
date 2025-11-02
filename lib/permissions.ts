@@ -1,11 +1,56 @@
+import { defaultStatements, adminAc } from 'better-auth/plugins/admin/access';
 import { createAccessControl } from 'better-auth/plugins/access';
 
 export const statement = {
+  ...defaultStatements,
   project: ['view', 'create', 'edit', 'delete'],
+  user: ['view', 'create', 'edit', 'delete'],
+  role: ['view', 'create', 'edit', 'delete'],
+  apar: ['view', 'create', 'edit', 'delete'],
+  hydrant: ['view', 'create', 'edit', 'delete'],
+  cekpoint: ['view', 'create', 'edit', 'delete'],
+  inspection: ['view', 'create', 'edit', 'delete'],
+  report: ['view', 'create', 'edit', 'delete'],
 } as const;
 
 const ac = createAccessControl(statement);
 
 export const inspector = ac.newRole({
-  project: ['view', 'create'],
+  apar: ['view'],
+  hydrant: ['view'],
+  cekpoint: ['view'],
+  inspection: ['view', 'create', 'edit', 'delete'],
+  report: ['view'],
+});
+
+export const manager = ac.newRole({
+  report: ['view'],
+  apar: ['view'],
+  hydrant: ['view'],
+  cekpoint: ['view'],
+  inspection: ['view'],
+});
+
+export const admin = ac.newRole({
+  ...adminAc.statements,
+  apar: ['view', 'create', 'edit', 'delete'],
+  hydrant: ['view', 'create', 'edit', 'delete'],
+  cekpoint: ['view', 'create', 'edit', 'delete'],
+  inspection: ['view', 'create', 'edit', 'delete'],
+  report: ['view', 'create', 'edit', 'delete'],
+  user: ['view'],
+  role: ['view'],
+  project: ['view', 'create', 'edit', 'delete'],
+});
+
+export const superadmin = ac.newRole({
+  ...adminAc.statements,
+  project: ['view', 'create', 'edit', 'delete'],
+  user: ['view', 'create', 'edit', 'delete'],
+  role: ['view', 'create', 'edit', 'delete'],
+  apar: ['view', 'create', 'edit', 'delete'],
+  hydrant: ['view', 'create', 'edit', 'delete'],
+  cekpoint: ['view', 'create', 'edit', 'delete'],
+  inspection: ['view', 'create', 'edit', 'delete'],
+  report: ['view', 'create', 'edit', 'delete'],
 });

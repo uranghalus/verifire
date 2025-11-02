@@ -1,8 +1,8 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { admin } from 'better-auth/plugins';
+import { admin as adminPg } from 'better-auth/plugins';
 import prisma from './prisma';
-import { inspector } from './permissions';
+import { admin, inspector, manager, superadmin } from './permissions';
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: 'mysql',
@@ -21,9 +21,9 @@ export const auth = betterAuth({
   },
   trustedOrigins: ['http://192.168.91.37:3000'],
   plugins: [
-    admin({
+    adminPg({
       adminRoles: ['admin', 'superadmin'],
-      roles: { inspector },
+      roles: { inspector, admin, superadmin, manager },
     }),
   ],
 });
