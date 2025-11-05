@@ -14,9 +14,7 @@ export default async function MainLayout({ children }: MainLayoutProps) {
     if (!session?.user) unauthorized()
     const user = session.user
     return (
-        <AuthenticatedLayout user={
-            user
-        }>
+        <AuthenticatedLayout user={user}>
             {children}
         </AuthenticatedLayout>
     )

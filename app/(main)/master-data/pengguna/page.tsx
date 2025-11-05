@@ -1,11 +1,22 @@
+
 import { Main } from '@/components/main';
 import { DialogProvider } from '@/context/dialog-provider';
 import { Metadata } from 'next';
 import React from 'react'
+import UserTable from './components/user-table';
+import { authClient } from '@/lib/auth-client';
+import { getServerSession } from '@/lib/get-session';
+import { getUsers } from './data/data';
 export const metadata: Metadata = {
     title: "Data Pengguna", // Akan menjadi: verifire - Dashboard
 };
-export default function PenggunaPage() {
+
+export default async function PenggunaPage() {
+    const { users } = await getUsers();
+    console.log(users);
+    const session = await getServerSession()
+    console.log(session);
+
     return (
         <DialogProvider>
             <Main fluid>
@@ -18,6 +29,8 @@ export default function PenggunaPage() {
                     </div>
                     {/* <UsersPrimaryButtons /> */}
                 </div>
+                {/* <UserTable data={users}/> */}
+                {JSON.stringify(users)}
             </Main>
         </DialogProvider>
     )
