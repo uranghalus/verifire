@@ -13,7 +13,7 @@ export const statement = {
   report: ['view', 'create', 'edit', 'delete'],
 } as const;
 
-const ac = createAccessControl(statement);
+export const ac = createAccessControl(statement);
 
 export const inspector = ac.newRole({
   apar: ['view'],

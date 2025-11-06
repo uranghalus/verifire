@@ -12,9 +12,27 @@ export const metadata: Metadata = {
 };
 
 export default async function PenggunaPage() {
-    const { users } = await getUsers();
-    console.log(users);
     const session = await getServerSession()
+    if (!session) {
+        return (
+            <DialogProvider>
+                <Main fluid>
+                    <div className='flex flex-wrap items-end justify-between gap-2'>
+                        <div>
+                            <h2 className='text-2xl font-bold tracking-tight'>User List</h2>
+                            <p className='text-muted-foreground'>
+                                Manage your users and their roles here.
+                            </p>
+                        </div>
+                    </div>
+                    <p className='text-sm text-muted-foreground'>Not authenticated</p>
+                </Main>
+            </DialogProvider>
+        )
+    }
+
+    const { data } = await getUsers({ userId: session.session.userId });
+    console.log("data:", data);
     console.log(session);
 
     return (
@@ -30,7 +48,7 @@ export default async function PenggunaPage() {
                     {/* <UsersPrimaryButtons /> */}
                 </div>
                 {/* <UserTable data={users}/> */}
-                {JSON.stringify(users)}
+                {JSON.stringify(data)}
             </Main>
         </DialogProvider>
     )

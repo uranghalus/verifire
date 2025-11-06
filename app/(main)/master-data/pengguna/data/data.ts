@@ -7,14 +7,23 @@ export const roles = [
   { label: 'Inspektor', value: 'inspektor', icon: Binoculars },
   { label: 'Manager', value: 'manager', icon: UserStar },
 ];
-export async function getUsers() {
-  const { data: users, error } = await authClient.admin.listUsers({
-    query: {
-      limit: 100,
-      offset: 100,
-      sortBy: 'name',
-      sortDirection: 'desc',
-    },
+type Props = {
+  userId: string;
+};
+export async function getUsers({ userId }: Props) {
+  const data = await authClient.admin.hasPermission({
+    userId: userId,
+    permission: { user: ['view', 'create', 'edit', 'delete'] },
   });
-  return { users, error };
+
+  return { data };
+  // const { data: users, error } = await authClient.admin.listUsers({
+  //   query: {
+  //     limit: 100,
+  //     offset: 100,
+  //     sortBy: 'name',
+  //     sortDirection: 'desc',
+  //   },
+  // });
+  // return { users, error };
 }
