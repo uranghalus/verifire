@@ -22,9 +22,7 @@ export const auth = betterAuth({
   trustedOrigins: ['http://192.168.91.37:3000'],
   plugins: [
     adminPg({
-      ac,
       adminRoles: ['admin', 'superadmin'],
-      roles: { inspector, admin, superadmin, manager },
     }),
   ],
 });
