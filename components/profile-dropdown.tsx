@@ -16,9 +16,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import { SignOutDialog } from './auth/signout-dialog'
-import { User } from 'better-auth'
+import { User } from '@/types'
 interface ProfileDropdownProps {
-    user: User
+    user: User | null
 }
 export function ProfileDropdown({ user }: ProfileDropdownProps) {
     const [open, setOpen] = useDialogState()
@@ -33,9 +33,9 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
                         aria-label="User menu"
                     >
                         <Avatar className="h-8 w-8 rounded-lg">
-                            <AvatarImage src={user.image ?? ''} alt={user.name} />
+                            <AvatarImage src={user?.image ?? ''} alt={user?.name} />
                             <AvatarFallback className="rounded-lg">
-                                {user.name?.[0]?.toUpperCase() ?? 'U'}
+                                {user?.name?.[0]?.toUpperCase() ?? 'U'}
                             </AvatarFallback>
                         </Avatar>
                     </Button>
@@ -44,9 +44,9 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col gap-1.5">
-                            <p className="text-sm font-medium leading-none">{user.name}</p>
+                            <p className="text-sm font-medium leading-none">{user?.name}</p>
                             <p className="text-xs text-muted-foreground leading-none">
-                                {user.email}
+                                {user?.email}
                             </p>
                         </div>
                     </DropdownMenuLabel>

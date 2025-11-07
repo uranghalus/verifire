@@ -2,8 +2,7 @@
 import { Main } from '@/components/main';
 import { DialogProvider } from '@/context/dialog-provider';
 import { Metadata } from 'next';
-import { getUsers } from './data/users';
-
+import UsersClient from './components/user-client';
 
 
 export const metadata: Metadata = {
@@ -14,8 +13,6 @@ export const metadata: Metadata = {
 
 export default async function PenggunaPage() {
 
-    const data = await getUsers()
-    console.log(data);
 
     return (
         <DialogProvider>
@@ -30,10 +27,7 @@ export default async function PenggunaPage() {
                     {/* <UsersPrimaryButtons /> */}
 
                 </div>
-                {/* <UserTable
-                    search={searchParams}
-                    navigate={() => { }}
-                /> */}
+                <UsersClient />
             </Main>
         </DialogProvider>
     )

@@ -1,3 +1,4 @@
+import { authClient } from '@/lib/auth-client';
 import { Binoculars, HatGlasses, ShieldUser, UserStar } from 'lucide-react';
 
 export const roles = [
@@ -6,3 +7,18 @@ export const roles = [
   { label: 'Inspektor', value: 'inspektor', icon: Binoculars },
   { label: 'Manager', value: 'manager', icon: UserStar },
 ];
+
+export async function getUser() {
+  const { data: users, error } = await authClient.admin.listUsers({
+    query: {
+      limit: 100,
+      offset: 100,
+      sortBy: 'name',
+      sortDirection: 'desc',
+      filterField: 'email',
+      filterValue: 'hello@example.com',
+      filterOperator: 'eq',
+    },
+  });
+  return { users, error };
+}

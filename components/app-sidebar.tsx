@@ -15,10 +15,12 @@ import { NavGroup } from './nav-group'
 import { sidebarData } from '@/data/sidebar-data'
 import { NavUser } from './nav-user'
 import { TeamSwitcher } from './team-switcher'
-import { User } from 'better-auth'
+import { User } from '@/types'
+
+
 // import { AppTitle } from './app-title'
 interface SidebarProps {
-    user: User
+    user: User | null
 }
 export function AppSidebar({ user }: SidebarProps) {
     const { collapsible, variant } = useLayout()

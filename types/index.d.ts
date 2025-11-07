@@ -1,9 +1,17 @@
 import { type LinkProps } from '@tanstack/react-router';
 
-type User = {
-  name: string;
+export type User = {
+  id?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
   email: string;
-  avatar: string;
+  emailVerified?: boolean;
+  name: string;
+  image?: string | null | undefined;
+  banned?: boolean | null | undefined;
+  role?: string;
+  banReason?: string | null | undefined;
+  banExpires?: Date | null | undefined;
 };
 
 type Team = {
