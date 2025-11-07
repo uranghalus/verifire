@@ -13,19 +13,27 @@ import { Header } from '../header'
 import { Search } from '../search'
 import { ThemeSwitch } from '../theme-switcher'
 import { ProfileDropdown } from '../profile-dropdown'
+import { getClientSession } from '@/lib/get-session'
+import { authClient } from '@/lib/auth-client'
 
 type AuthenticatedLayoutProps = {
     children?: React.ReactNode
-    user: User
 }
-
-export default function AuthenticatedLayout({ children, user }: AuthenticatedLayoutProps) {
+export default function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     // 🧠 Karena document.cookie hanya tersedia di client, kita pakai state
-    const [defaultOpen, setDefaultOpen] = useState(true)
 
+
+    const [defaultOpen, setDefaultOpen] = useState(true)
+    const [user, setUser] = useState<User | null>(null);
     useEffect(() => {
+        async function fetchUserData() {
+            const { data, error } = await authClient.useSession()
+            console.log('userData in AuthenticatedLayout:', data, error);
+            setUser(data?.user || null);
+        }
         const cookieValue = getCookie('sidebar_state')
         setDefaultOpen(cookieValue !== 'false')
+        fetchUserData()
     }, [])
 
     return (

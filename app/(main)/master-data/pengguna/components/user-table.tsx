@@ -1,25 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { type User } from "../data/userSchema";
-import { useTableUrlState, type NavigateFn } from "@/hooks/use-table-url-state";
 import {
-    type SortingState,
-    type VisibilityState,
+    ColumnDef,
     flexRender,
     getCoreRowModel,
-    getFacetedRowModel,
-    getFacetedUniqueValues,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
     useReactTable,
-} from "@tanstack/react-table";
+} from "@tanstack/react-table"
 
-import { cn } from "@/lib/utils";
-import { DataTableToolbar } from "@/components/datatable/datatable-toolbar";
-import { roles } from "../data/data";
 import {
     Table,
     TableBody,
@@ -27,121 +14,32 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table";
-import { usersColumns as columns } from "./users-columns";
-import { authClient } from "@/lib/auth-client";
+} from "@/components/ui/table"
 
-type TableProps = {
-    search: Record<string, unknown>;
-    navigate: NavigateFn;
-};
+interface DataTableProps<TData, TValue> {
+    columns: ColumnDef<TData, TValue>[]
+    data: TData[]
+}
 
-export default function UserTable({ search, navigate }: TableProps) {
-    const [rowSelection, setRowSelection] = useState({});
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-    const [sorting, setSorting] = useState<SortingState>([]);
-    const [users, setUsers] = useState<User[]>([]);
-
-    const {
-        columnFilters,
-        onColumnFiltersChange,
-        pagination,
-        onPaginationChange,
-        ensurePageInRange,
-    } = useTableUrlState({
-        search,
-        navigate,
-        pagination: { defaultPage: 1, defaultPageSize: 10 },
-        globalFilter: { enabled: false },
-        columnFilters: [
-            { columnId: "name", searchKey: "name", type: "string" },
-            { columnId: "role", searchKey: "role", type: "array" },
-        ],
-    });
-
+export function UserTable<TData, TValue>({
+    columns,
+    data,
+}: DataTableProps<TData, TValue>) {
     const table = useReactTable({
-        data: users,
+        data,
         columns,
-        state: {
-            sorting,
-            pagination,
-            rowSelection,
-            columnFilters,
-            columnVisibility,
-        },
-        enableRowSelection: true,
-        onPaginationChange,
-        onColumnFiltersChange,
-        onRowSelectionChange: setRowSelection,
-        onSortingChange: setSorting,
-        onColumnVisibilityChange: setColumnVisibility,
-        getPaginationRowModel: getPaginationRowModel(),
         getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFacetedRowModel: getFacetedRowModel(),
-        getFacetedUniqueValues: getFacetedUniqueValues(),
-    });
-
-    useEffect(() => {
-        ensurePageInRange(table.getPageCount());
-
-        async function fetchUsers() {
-            try {
-                const response = await authClient.admin.listUsers({
-                    query: { limit: 100 },
-                });
-
-                if (response?.data?.users) {
-                    setUsers(response.data.users as User[]);
-                } else {
-                    console.error("Fetch users: response tidak valid", response);
-                    setUsers([]);
-                }
-            } catch (err) {
-                console.error("Gagal fetch users:", err);
-                setUsers([]);
-            }
-        }
-
-        fetchUsers();
-    }, [ensurePageInRange]); // ✅ tidak pakai "table" agar tidak loop
+    })
 
     return (
-        <div
-            className={cn(
-                'max-sm:has-[div[role="toolbar"]]:mb-16',
-                "flex flex-1 flex-col gap-4"
-            )}
-        >
-            <DataTableToolbar
-                table={table}
-                searchPlaceholder="Filter Pengguna"
-                searchKey="name"
-                filters={[
-                    {
-                        columnId: "role",
-                        title: "Role",
-                        options: roles.map((role) => ({ ...role })),
-                    },
-                ]}
-            />
-
-            <div className="overflow-hidden rounded-md border">
-                <Table>
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id} className="group/row">
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead
-                                        key={header.id}
-                                        colSpan={header.colSpan}
-                                        className={cn(
-                                            "bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted",
-                                            (header.column.columnDef.meta as any)?.className,
-                                            (header.column.columnDef.meta as any)?.thClassName
-                                        )}
-                                    >
+        <div className="overflow-hidden rounded-md border">
+            <Table>
+                <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                            {headerGroup.headers.map((header) => {
+                                return (
+                                    <TableHead key={header.id}>
                                         {header.isPlaceholder
                                             ? null
                                             : flexRender(
@@ -149,46 +47,34 @@ export default function UserTable({ search, navigate }: TableProps) {
                                                 header.getContext()
                                             )}
                                     </TableHead>
+                                )
+                            })}
+                        </TableRow>
+                    ))}
+                </TableHeader>
+                <TableBody>
+                    {table.getRowModel().rows?.length ? (
+                        table.getRowModel().rows.map((row) => (
+                            <TableRow
+                                key={row.id}
+                                data-state={row.getIsSelected() && "selected"}
+                            >
+                                {row.getVisibleCells().map((cell) => (
+                                    <TableCell key={cell.id}>
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </TableCell>
                                 ))}
                             </TableRow>
-                        ))}
-                    </TableHeader>
-
-                    <TableBody>
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && "selected"}
-                                    className="group/row"
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell
-                                            key={cell.id}
-                                            className={cn(
-                                                "bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted",
-                                                (cell.column.columnDef.meta as any)?.className,
-                                                (cell.column.columnDef.meta as any)?.tdClassName
-                                            )}
-                                        >
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                            )}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={columns.length} className="h-24 text-center">
+                                No results.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
         </div>
-    );
+    )
 }

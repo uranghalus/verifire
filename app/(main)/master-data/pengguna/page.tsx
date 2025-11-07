@@ -2,7 +2,9 @@
 import { Main } from '@/components/main';
 import { DialogProvider } from '@/context/dialog-provider';
 import { Metadata } from 'next';
-import UserTable from './components/user-table';
+import { getUsers } from './data/users';
+
+
 
 export const metadata: Metadata = {
     title: "Data Pengguna", // Akan menjadi: verifire - Dashboard
@@ -10,9 +12,10 @@ export const metadata: Metadata = {
 
 
 
-export default function PenggunaPage({ searchParams }) {
+export default async function PenggunaPage() {
 
-
+    const data = await getUsers()
+    console.log(data);
 
     return (
         <DialogProvider>
@@ -27,10 +30,10 @@ export default function PenggunaPage({ searchParams }) {
                     {/* <UsersPrimaryButtons /> */}
 
                 </div>
-                <UserTable
+                {/* <UserTable
                     search={searchParams}
                     navigate={() => { }}
-                />
+                /> */}
             </Main>
         </DialogProvider>
     )

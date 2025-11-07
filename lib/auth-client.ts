@@ -6,16 +6,16 @@ import { ac, admin, inspector, manager, superadmin } from './permissions';
 
 export const authClient = createAuthClient({
   plugins: [
-    inferAdditionalFields<typeof auth>(),
     adminClient({
       ac,
       roles: {
-        inspector,
         admin,
         superadmin,
+        inspector,
         manager,
       },
     }),
+    inferAdditionalFields<typeof auth>(),
     nextCookies(),
   ],
 });
