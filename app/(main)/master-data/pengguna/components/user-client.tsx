@@ -23,7 +23,9 @@ export default function UsersClient() {
     const [loading, setLoading] = React.useState(true);
     const [users, setUsers] = React.useState<User[]>([]);
     const [total, setTotal] = React.useState(0);
-
+    const [searchInput, setSearchInput] = React.useState("");
+    const [roleFilter, setRoleFilter] = React.useState<string | undefined>(undefined);
+    const [statusFilter, setStatusFilter] = React.useState<string | undefined>(undefined);
     const [page, setPage] = React.useState(0);
     const [pageSize, setPageSize] = React.useState(10);
     const [search, setSearch] = React.useState("");
@@ -36,7 +38,9 @@ export default function UsersClient() {
         const result = await fetchUsersServer({
             page,
             pageSize,
-            search,
+            search: searchInput,
+            role: roleFilter,
+            status: statusFilter,
             sortBy,
             sortDirection,
         });

@@ -9,12 +9,16 @@ export async function fetchUsersServer({
   search,
   sortBy,
   sortDirection,
+  role,
+  status,
 }: {
   page: number;
   pageSize: number;
   search: string;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
+  role?: string;
+  status?: string;
 }) {
   const offset = page * pageSize;
 
@@ -26,6 +30,9 @@ export async function fetchUsersServer({
         searchValue: search || undefined,
         searchField: 'name',
         searchOperator: 'contains',
+        filterField: role ? 'role' : status ? 'status' : undefined,
+        filterValue: role ?? status ?? undefined,
+        filterOperator: 'eq',
         limit: pageSize,
         offset,
         sortBy,

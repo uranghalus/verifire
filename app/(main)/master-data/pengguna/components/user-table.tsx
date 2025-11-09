@@ -22,6 +22,7 @@ import {
 
 import React from "react"
 import { DataTablePagination } from "@/components/datatable/data-table-pagination"
+import { DataTableToolbar } from "@/components/datatable/datatable-toolbar"
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
@@ -37,52 +38,64 @@ interface DataTableProps<TData, TValue> {
     }
 }
 
-export function UserTable<TData extends Record<string, unknown>, TValue>({ columns, data, server }: DataTableProps<TData, TValue>) {
-    // Sinkronkan state sorting dengan server
+export function UserTable<TData extends Record<string, unknown>, TValue>({
+    columns,
+    data,
+    server,
+}: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
 
     const table = useReactTable({
         data,
         columns,
         state: {
-            pagination: { pageIndex: server.page, pageSize: server.pageSize },
             sorting,
+            globalFilter: '',
+            columnFilters: [],
+            pagination: {
+                pageIndex: server.page,
+                pageSize: server.pageSize,
+            },
         },
-        // manual modes
         manualPagination: true,
-        pageCount: Math.max(1, Math.ceil(server.total / server.pageSize)),
         manualSorting: true,
-
-        onPaginationChange: (updater) => {
-            const next = typeof updater === "function"
-                ? updater({ pageIndex: server.page, pageSize: server.pageSize })
-                : updater
-            if (next.pageIndex !== server.page) server.setPage(next.pageIndex)
-            if (next.pageSize !== server.pageSize) server.setPageSize(next.pageSize)
-        },
-
-        onSortingChange: (updater) => {
-            const next = typeof updater === "function" ? updater(sorting) : updater
-            setSorting(next)
-            const first = next[0]
-            if (first) {
-                server.setSortBy(String(first.id))
-                server.setSortDirection(first.desc ? "desc" : "asc")
-            } else {
-                // fallback ke default
-                server.setSortBy("name")
-                server.setSortDirection("asc")
-            }
-        },
+        manualFiltering: true,
+        pageCount: Math.ceil(server.total / server.pageSize),
 
         getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(), // hanya untuk visual caret
+        getSortedRowModel: getSortedRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
     })
 
     return (
-        <div className="space-y-4">
-            <div className="overflow-hidden rounded-md border">
+        <div className='space-y-4'>
+            {/* ✅ Toolbar */}
+            <DataTableToolbar
+                table={table}
+                searchPlaceholder='Cari nama...'
+                searchKey='name'
+                filters={[
+                    {
+                        columnId: 'role',
+                        title: 'Role',
+                        options: [
+                            { label: 'Admin', value: 'admin' },
+                            { label: 'User', value: 'user' },
+                        ],
+                    },
+                    {
+                        columnId: 'status',
+                        title: 'Status',
+                        options: [
+                            { label: 'Active', value: 'active' },
+                            { label: 'Banned', value: 'banned' },
+                        ],
+                    },
+                ]}
+            />
+
+            {/* ✅ Table */}
+            <div className='overflow-hidden rounded-md border'>
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -91,12 +104,16 @@ export function UserTable<TData extends Record<string, unknown>, TValue>({ colum
                                     <TableHead key={header.id}>
                                         {header.isPlaceholder
                                             ? null
-                                            : flexRender(header.column.columnDef.header, header.getContext())}
+                                            : flexRender(
+                                                header.column.columnDef.header,
+                                                header.getContext()
+                                            )}
                                     </TableHead>
                                 ))}
                             </TableRow>
                         ))}
                     </TableHeader>
+
                     <TableBody>
                         {table.getRowModel().rows.length ? (
                             table.getRowModel().rows.map((row) => (
@@ -110,7 +127,7 @@ export function UserTable<TData extends Record<string, unknown>, TValue>({ colum
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
+                                <TableCell colSpan={columns.length} className='h-24 text-center'>
                                     Tidak ada hasil
                                 </TableCell>
                             </TableRow>
