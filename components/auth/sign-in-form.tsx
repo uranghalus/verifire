@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { Checkbox } from '../ui/checkbox'
 import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { loginUser } from '@/config/auth-config'
 
 const formSchema = z
     .object({
@@ -35,21 +36,17 @@ export default function SigninForm({ className, ...props }: React.HTMLAttributes
         defaultValues: {
             email: '',
             password: '',
+            rememberMe: false
         },
     })
-    async function onSubmit({ email, password, rememberMe }: SignInValues) {
+    async function onSubmit(data: SignInValues) {
         setIsLoading(true);
 
-        const { error } = await authClient.signIn.email({
-            email,
-            password,
-            rememberMe,
-        });
-
+        const result = await loginUser(data)
         setIsLoading(false);
 
-        if (error) {
-            setError(error.message || "Something went wrong");
+        if (result.error) {
+            setError(result.error.reason || "Something went wrong");
         } else {
             toast.success("Signed in successfully");
             router.push(redirect ?? "/dashboard");

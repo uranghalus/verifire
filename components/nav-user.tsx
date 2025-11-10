@@ -27,16 +27,22 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar'
 import { SignOutDialog } from './auth/signout-dialog'
-import { User } from '@/types'
+import { authClient } from '@/lib/auth-client'
 
 
-type NavUserProps = {
-    user: User | null
-}
 
-export function NavUser({ user }: NavUserProps) {
+
+export function NavUser() {
     const { isMobile } = useSidebar()
     const [open, setOpen] = useState(false)
+    const {
+        data: session,
+        isPending, //loading state
+        error, //error object
+        refetch //refetch the session
+    } = authClient.useSession()
+    const user = session?.user
+    console.log('Session NavUser', user);
 
     return (
         <>

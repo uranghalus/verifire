@@ -2,6 +2,9 @@
 
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { User } from './userSchema';
+import { ActionResult } from '@/lib/utils';
+import { APIError } from 'better-auth';
 
 export async function fetchUsersServer({
   page,

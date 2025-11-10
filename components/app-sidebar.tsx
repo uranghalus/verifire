@@ -45,7 +45,7 @@ export function AppSidebar({ user }: SidebarProps) {
 
             {/* === Footer (User Info) === */}
             <SidebarFooter>
-                <NavUser user={user} />
+                <NavUser />
             </SidebarFooter>
 
             {/* === Sidebar Rail (untuk mode collapsed) === */}

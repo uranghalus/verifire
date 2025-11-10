@@ -26,3 +26,8 @@ export function getPageNumbers(current: number, total: number) {
 
   return pages;
 }
+export type ActionResult<T = unknown> = {
+  success: { reason: string } | null;
+  error: { reason: string } | null;
+  data?: T;
+};
