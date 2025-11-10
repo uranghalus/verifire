@@ -1,5 +1,6 @@
-"use client"
+"use client";
 
+import React from "react";
 import {
     ColumnDef,
     flexRender,
@@ -8,7 +9,7 @@ import {
     getSortedRowModel,
     SortingState,
     useReactTable,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
 import {
     Table,
@@ -17,85 +18,99 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
+import { DataTableToolbar } from "@/components/datatable/datatable-toolbar";
+import { DataTablePagination } from "@/components/datatable/data-table-pagination";
 
 
-import React from "react"
-import { DataTablePagination } from "@/components/datatable/data-table-pagination"
-import { DataTableToolbar } from "@/components/datatable/datatable-toolbar"
 
 interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[]
-    data: TData[]
+    columns: ColumnDef<TData, TValue>[];
+    data: TData[];
     server: {
-        page: number
-        pageSize: number
-        total: number
-        setPage: (p: number) => void
-        setPageSize: (p: number) => void
-        setSortBy: (col: string) => void
-        setSortDirection: (dir: "asc" | "desc") => void
-    }
+        page: number;
+        pageSize: number;
+        total: number;
+        setPage: (p: number) => void;
+        setPageSize: (n: number) => void;
+        setSortBy: (col: string) => void;
+        setSortDirection: (dir: "asc" | "desc") => void;
+    };
+    toolbar: {
+        search: string;
+        setSearch: (v: string) => void;
+        role?: string;
+        setRole: (v: string | undefined) => void;
+    };
 }
 
-export function UserTable<TData extends Record<string, unknown>, TValue>({
+export function UserTable<TData extends Record<string, any>, TValue>({
     columns,
     data,
     server,
+    toolbar,
 }: DataTableProps<TData, TValue>) {
-    const [sorting, setSorting] = React.useState<SortingState>([])
+    const [sorting, setSorting] = React.useState<SortingState>([]);
 
     const table = useReactTable({
         data,
         columns,
         state: {
             sorting,
-            globalFilter: '',
-            columnFilters: [],
             pagination: {
-                pageIndex: server.page,
+                pageIndex: server.page - 1,
                 pageSize: server.pageSize,
             },
         },
+
         manualPagination: true,
         manualSorting: true,
-        manualFiltering: true,
+
         pageCount: Math.ceil(server.total / server.pageSize),
+
+        onSortingChange: (sort) => {
+            setSorting(sort);
+            const s = sort[0];
+            if (s) {
+                server.setSortBy(s.id);
+                server.setSortDirection(s.desc ? "desc" : "asc");
+            }
+        },
+
+        onPaginationChange: (updater) => {
+            const next =
+                typeof updater === "function"
+                    ? updater({
+                        pageIndex: server.page - 1,
+                        pageSize: server.pageSize,
+                    })
+                    : updater;
+
+            if (next.pageIndex !== server.page - 1)
+                server.setPage(next.pageIndex + 1);
+
+            if (next.pageSize !== server.pageSize)
+                server.setPageSize(next.pageSize);
+        },
 
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
-    })
+    });
 
     return (
-        <div className='space-y-4'>
+        <div className="space-y-4">
             {/* ✅ Toolbar */}
             <DataTableToolbar
                 table={table}
-                searchPlaceholder='Cari nama...'
-                searchKey='name'
-                filters={[
-                    {
-                        columnId: 'role',
-                        title: 'Role',
-                        options: [
-                            { label: 'Admin', value: 'admin' },
-                            { label: 'User', value: 'user' },
-                        ],
-                    },
-                    {
-                        columnId: 'status',
-                        title: 'Status',
-                        options: [
-                            { label: 'Active', value: 'active' },
-                            { label: 'Banned', value: 'banned' },
-                        ],
-                    },
-                ]}
+                searchValue={toolbar.search}
+                onSearchChange={toolbar.setSearch}
+                roleValue={toolbar.role}
+                onRoleChange={toolbar.setRole}
             />
 
             {/* ✅ Table */}
-            <div className='overflow-hidden rounded-md border'>
+            <div className="overflow-hidden rounded-md border">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -120,14 +135,20 @@ export function UserTable<TData extends Record<string, unknown>, TValue>({
                                 <TableRow key={row.id}>
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id}>
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext()
+                                            )}
                                         </TableCell>
                                     ))}
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={columns.length} className='h-24 text-center'>
+                                <TableCell
+                                    colSpan={columns.length}
+                                    className="h-24 text-center"
+                                >
                                     Tidak ada hasil
                                 </TableCell>
                             </TableRow>
@@ -138,5 +159,5 @@ export function UserTable<TData extends Record<string, unknown>, TValue>({
 
             <DataTablePagination table={table} />
         </div>
-    )
+    );
 }

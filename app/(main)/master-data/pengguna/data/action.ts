@@ -1,65 +1,128 @@
-'use server';
-
+import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { User } from './userSchema';
-import { ActionResult } from '@/lib/utils';
-import { APIError } from 'better-auth';
 
-export async function fetchUsersServer({
-  page,
-  pageSize,
-  search,
-  sortBy,
-  sortDirection,
-  role,
-  status,
-}: {
-  page: number;
-  pageSize: number;
-  search: string;
-  sortBy: string;
-  sortDirection: 'asc' | 'desc';
+export interface UserWithDetails {
+  id: string;
+  name: string;
+  email: string;
+  verified: boolean;
+  banned: boolean;
+  banReason?: string;
+  banExpires?: Date | null;
+  accounts: string[];
+  lastSignIn: Date | null;
+  createdAt: Date;
+  avatarUrl: string;
+  role?: string;
+}
+
+export interface GetUsersOptions {
+  limit?: number;
+  offset?: number;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
   role?: string;
   status?: string;
-}) {
-  const offset = page * pageSize;
+  email?: string;
+  name?: string;
+}
 
-  let result;
+export async function getUsers(
+  options: GetUsersOptions = {}
+): Promise<{ users: UserWithDetails[]; total: number }> {
+  const query: Record<string, unknown> = {
+    limit: options.limit ?? 10,
+    offset: options.offset ?? 0,
+  };
 
-  try {
-    result = await auth.api.listUsers({
-      query: {
-        searchValue: search || undefined,
-        searchField: 'name',
-        searchOperator: 'contains',
-        filterField: role ? 'role' : status ? 'status' : undefined,
-        filterValue: role ?? status ?? undefined,
-        filterOperator: 'eq',
-        limit: pageSize,
-        offset,
-        sortBy,
-        sortDirection,
-      },
-      headers: await headers(), // ✅ inject session cookies
-    });
-  } catch (err) {
-    console.error('listUsers error:', err);
+  if (options.sortBy) query.sortBy = options.sortBy;
+  if (options.sortDirection) query.sortDirection = options.sortDirection;
+
+  if (options.role) {
+    query.filterField = 'role';
+    query.filterOperator = 'eq';
+    query.filterValue = options.role;
+  }
+
+  if (options.status) {
+    query.filterField = 'banned';
+    query.filterOperator = 'eq';
+    query.filterValue = options.status === 'banned';
+  }
+
+  if (options.email) {
+    query.searchField = 'email';
+    query.searchOperator = 'contains';
+    query.searchValue = options.email;
+  }
+
+  if (options.name) {
+    query.searchField = 'name';
+    query.searchOperator = 'contains';
+    query.searchValue = options.name;
+  }
+
+  // ✅ Ambil user dari Better Auth
+  const result = await auth.api.listUsers({
+    headers: await headers(),
+    query,
+  });
+
+  if (!result.users) {
     return { users: [], total: 0 };
   }
 
-  // ✅ result shape:
-  // { data: { users: [], total: number }, error }
-  //   if (!result || result.error) {
-  //     console.error('listUsers response error:', result?.error);
-  //     return { users: [], total: 0 };
-  //   }
+  // ✅ Ambil accounts (Prisma)
+  const accountsQuery = await prisma.account.findMany({
+    select: {
+      userId: true,
+      providerId: true,
+    },
+  });
 
-  const data = result;
-  console.log(data);
+  // ✅ Ambil sessions (Prisma)
+  const sessionsQuery = await prisma.session.findMany({
+    select: {
+      userId: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'asc' },
+  });
 
-  return {
-    users: data?.users ?? [],
-    total: data?.total ?? 0,
-  };
+  // ✅ Kelompokkan accounts per user
+  const accountsByUser = accountsQuery.reduce((acc, account) => {
+    if (!acc[account.userId]) acc[account.userId] = [];
+    acc[account.userId].push(account.providerId);
+    return acc;
+  }, {} as Record<string, string[]>);
+
+  // ✅ Ambil lastSignIn per user
+  const lastSignInByUser = sessionsQuery.reduce((acc, session) => {
+    if (!acc[session.userId] || session.createdAt > acc[session.userId]) {
+      acc[session.userId] = session.createdAt;
+    }
+    return acc;
+  }, {} as Record<string, Date>);
+
+  // ✅ Transform data agar cocok dengan UI
+  const users: UserWithDetails[] = result.users.map((user) => {
+    const accounts = accountsByUser[user.id] || [];
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      verified: user.emailVerified,
+      role: user.role,
+      banned: user.banned ?? false,
+      banReason: user.banReason || '',
+      banExpires: user.banExpires || null,
+      accounts,
+      lastSignIn: lastSignInByUser[user.id] || null,
+      createdAt: user.createdAt,
+      avatarUrl: user.image || '',
+    };
+  });
+
+  return { users, total: result.total ?? users.length };
 }

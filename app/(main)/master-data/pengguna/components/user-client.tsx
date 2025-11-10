@@ -1,93 +1,68 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import React, { useEffect } from "react";
-
-
-// import { UserTableSkeleton } from "@/components/user-table-skeleton";
-
-import { Button } from "@/components/ui/button";
-import { fetchUsersServer } from "../data/action";
+import React from "react";
 import { UserTableSkeleton } from "./user-table-skeleton";
 import { UserTable } from "./user-table";
 import { columns } from "./users-columns";
-import { User } from "@/types";
-// import {
-//     exportUsersToExcel,
-//     exportUsersToPDF,
-// } from "@/components/export-users";
 
 
+export type UserWithDetails = {
+    id: string;
+    name: string;
+    email: string;
+    verified: boolean;
+    banned: boolean;
+    banReason?: string;
+    banExpires?: Date | null;
+    accounts: string[];
+    lastSignIn: Date | null;
+    createdAt: Date;
+    avatarUrl: string;
+    role?: string;
+};
 
 export default function UsersClient() {
     const [loading, setLoading] = React.useState(true);
-    const [users, setUsers] = React.useState<User[]>([]);
+    const [users, setUsers] = React.useState<UserWithDetails[]>([]);
     const [total, setTotal] = React.useState(0);
-    const [searchInput, setSearchInput] = React.useState("");
-    const [roleFilter, setRoleFilter] = React.useState<string | undefined>(undefined);
-    const [statusFilter, setStatusFilter] = React.useState<string | undefined>(undefined);
-    const [page, setPage] = React.useState(0);
+
+    // ✅ server-side controlled states
+    const [page, setPage] = React.useState(1);
     const [pageSize, setPageSize] = React.useState(10);
     const [search, setSearch] = React.useState("");
-    const [sortBy, setSortBy] = React.useState("name");
-    const [sortDirection, setSortDirection] =
-        React.useState<"asc" | "desc">("asc");
+    const [role, setRole] = React.useState<string | undefined>(undefined);
+    const [sortBy, setSortBy] = React.useState("createdAt");
+    const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">(
+        "desc"
+    );
 
     async function loadData() {
         setLoading(true);
-        const result = await fetchUsersServer({
-            page,
-            pageSize,
-            search: searchInput,
-            role: roleFilter,
-            status: statusFilter,
-            sortBy,
-            sortDirection,
-        });
-        console.log('Load User', result);
 
-        setUsers(result.users ?? []);   // ✅ Aman dari undefined/null
-        setTotal(result.total ?? 0);
+        const url = new URL("/api/user", window.location.origin);
+        url.searchParams.set("page", String(page));
+        url.searchParams.set("limit", String(pageSize));
+
+        if (search) url.searchParams.set("name", search);
+        if (role) url.searchParams.set("role", role);
+
+        url.searchParams.set("sortBy", sortBy);
+        url.searchParams.set("sortDirection", sortDirection);
+
+        const res = await fetch(url.toString());
+        const json = await res.json();
+
+        setUsers(json.users);
+        setTotal(json.total);
         setLoading(false);
     }
 
-    // Debounce search
-    useEffect(() => {
-        const t = setTimeout(() => {
-            setPage(0);
-            loadData();
-        }, 300);
-        return () => clearTimeout(t);
-    }, [search]);
-
-    useEffect(() => {
+    React.useEffect(() => {
         loadData();
-    }, [page, pageSize, sortBy, sortDirection]);
+    }, [page, pageSize, search, role, sortBy, sortDirection]);
 
     return (
         <div className="space-y-4 mt-6">
-
-            {/* ✅ Search + Export */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <input
-                    type="text"
-                    placeholder="Cari nama..."
-                    className="border px-3 py-2 rounded-md w-full sm:w-80"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
-
-                {/* <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => exportUsersToExcel(users)}>
-                        Export Excel
-                    </Button>
-                    <Button variant="outline" onClick={() => exportUsersToPDF(users)}>
-                        Export PDF
-                    </Button>
-                </div> */}
-            </div>
-
-            {/* ✅ Table */}
             {loading ? (
                 <UserTableSkeleton />
             ) : (
@@ -102,6 +77,12 @@ export default function UsersClient() {
                         setPageSize,
                         setSortBy,
                         setSortDirection,
+                    }}
+                    toolbar={{
+                        search,
+                        setSearch,
+                        role,
+                        setRole,
                     }}
                 />
             )}
