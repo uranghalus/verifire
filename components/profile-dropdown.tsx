@@ -16,13 +16,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import { SignOutDialog } from './auth/signout-dialog'
-import { User } from '@/types'
-interface ProfileDropdownProps {
-    user: User | null
-}
-export function ProfileDropdown({ user }: ProfileDropdownProps) {
-    const [open, setOpen] = useDialogState()
+import { authClient } from '@/lib/auth-client'
+import { Skeleton } from './ui/skeleton'
 
+
+export function ProfileDropdown() {
+    const [open, setOpen] = useDialogState()
+    const { data, isPending } = authClient.useSession()
+    const user = data?.user
     return (
         <>
             <DropdownMenu modal={false}>
@@ -32,12 +33,16 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
                         className="relative h-8 w-8 rounded-full"
                         aria-label="User menu"
                     >
-                        <Avatar className="h-8 w-8 rounded-lg">
-                            <AvatarImage src={user?.image ?? ''} alt={user?.name} />
-                            <AvatarFallback className="rounded-lg">
-                                {user?.name?.[0]?.toUpperCase() ?? 'U'}
-                            </AvatarFallback>
-                        </Avatar>
+                        {isPending ? (
+                            <Skeleton className="h-8 w-8 rounded-full" />
+                        ) : (
+                            <Avatar className="h-8 w-8 rounded-lg">
+                                <AvatarImage src={user?.image ?? ''} alt={user?.name} />
+                                <AvatarFallback className="rounded-lg">
+                                    {user?.name?.[0]?.toUpperCase() ?? 'U'}
+                                </AvatarFallback>
+                            </Avatar>
+                        )}
                     </Button>
                 </DropdownMenuTrigger>
 

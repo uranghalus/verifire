@@ -19,10 +19,8 @@ import { User } from '@/types'
 
 
 // import { AppTitle } from './app-title'
-interface SidebarProps {
-    user: User | null
-}
-export function AppSidebar({ user }: SidebarProps) {
+
+export function AppSidebar() {
     const { collapsible, variant } = useLayout()
 
     return (

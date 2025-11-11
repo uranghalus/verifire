@@ -6,7 +6,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 import { AppSidebar } from "@/components/app-sidebar"
 
-import { getServerSession } from "@/lib/get-session"
+import { getClientSession, getServerSession } from "@/lib/get-session"
 import { Header } from "@/components/header"
 import { Search } from "@/components/search"
 import { ThemeSwitch } from "@/components/theme-switcher"
@@ -22,15 +22,11 @@ export default async function AuthenticatedLayout({ children }: AuthenticatedLay
     const sidebarState = cookieStore.get("sidebar_state")?.value
     const defaultOpen = sidebarState !== "false"
 
-    // ✅ Ambil session dari server
-    const session = await getServerSession()
-    const user = session?.user ?? null
-
     return (
         <SearchProvider>
             <LayoutProvider>
                 <SidebarProvider defaultOpen={defaultOpen}>
-                    <AppSidebar user={user} />
+                    <AppSidebar />
 
                     <SidebarInset
                         className={cn(
@@ -43,7 +39,7 @@ export default async function AuthenticatedLayout({ children }: AuthenticatedLay
                             <div className="ms-auto flex items-center space-x-4">
                                 <Search />
                                 <ThemeSwitch />
-                                <ProfileDropdown user={user} />
+                                <ProfileDropdown />
                             </div>
                         </Header>
 

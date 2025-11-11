@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/sidebar'
 import { SignOutDialog } from './auth/signout-dialog'
 import { authClient } from '@/lib/auth-client'
+import { Skeleton } from './ui/skeleton'
 
 
 
@@ -35,12 +36,7 @@ import { authClient } from '@/lib/auth-client'
 export function NavUser() {
     const { isMobile } = useSidebar()
     const [open, setOpen] = useState(false)
-    const {
-        data: session,
-        isPending, //loading state
-        error, //error object
-        refetch //refetch the session
-    } = authClient.useSession()
+    const { data: session, isPending } = authClient.useSession()
     const user = session?.user
     console.log('Session NavUser', user);
 
@@ -54,16 +50,26 @@ export function NavUser() {
                                 size="lg"
                                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                             >
-                                <Avatar className="h-8 w-8 rounded-lg">
-                                    <AvatarImage src={user?.image ?? ''} alt={user?.name} />
-                                    <AvatarFallback className="rounded-lg">
-                                        {user?.name?.[0]?.toUpperCase() ?? 'U'}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="grid flex-1 text-start text-sm leading-tight">
-                                    <span className="truncate font-semibold">{user?.name}</span>
-                                    <span className="truncate text-xs">{user?.email}</span>
-                                </div>
+                                {isPending ? (
+                                    <div className="flex items-center space-x-4">
+                                        <Skeleton className="h-8 w-8 rounded-full" />
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-4 w-[180px]" />
+                                            <Skeleton className="h-4 w-[150px]" />
+                                        </div>
+                                    </div>
+                                ) : (<>
+                                    <Avatar className="h-8 w-8 rounded-lg">
+                                        <AvatarImage src={user?.image ?? ''} alt={user?.name} />
+                                        <AvatarFallback className="rounded-lg">
+                                            {user?.name?.[0]?.toUpperCase() ?? 'U'}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="grid flex-1 text-start text-sm leading-tight">
+                                        <span className="truncate font-semibold">{user?.name}</span>
+                                        <span className="truncate text-xs">{user?.email}</span>
+                                    </div>
+                                </>)}
                                 <ChevronsUpDown className="ms-auto size-4" />
                             </SidebarMenuButton>
                         </DropdownMenuTrigger>

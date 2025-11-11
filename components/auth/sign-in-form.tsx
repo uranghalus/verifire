@@ -7,13 +7,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Button } from '../ui/button'
 import { PasswordInput } from '../password-input'
 import { Input } from '../ui/input'
-import { Facebook, GitBranch, LoaderCircle } from 'lucide-react'
-import { authClient } from '@/lib/auth-client'
+
 import Link from 'next/link'
 import { Checkbox } from '../ui/checkbox'
 import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { loginUser } from '@/config/auth-config'
+import { LoaderCircle } from 'lucide-react'
 
 const formSchema = z
     .object({
@@ -48,7 +48,9 @@ export default function SigninForm({ className, ...props }: React.HTMLAttributes
         if (result.error) {
             setError(result.error.reason || "Something went wrong");
         } else {
-            toast.success("Signed in successfully");
+            toast.success(result.success?.reason);
+            console.log('Data', result.data);
+
             router.push(redirect ?? "/dashboard");
         }
     }

@@ -10,25 +10,31 @@ interface authProps {
   password: string;
   rememberMe?: boolean;
 }
+
 export interface LoginUserResult {
   user: User;
 }
+
 export async function loginUser(
   params: authProps
 ): Promise<ActionResult<LoginUserResult>> {
   const { email, password, rememberMe } = params;
+
   try {
-    await auth.api.signInEmail({
+    const result = await auth.api.signInEmail({
       body: {
         email,
         password,
         rememberMe,
       },
     });
+
     return {
       success: { reason: 'Login successful' },
       error: null,
-      data: undefined,
+      data: {
+        user: result.user,
+      },
     };
   } catch (err) {
     if (err instanceof APIError) {
