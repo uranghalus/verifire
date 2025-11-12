@@ -1,163 +1,111 @@
-"use client";
+"use client"
 
-import React from "react";
-import {
-    ColumnDef,
-    flexRender,
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    SortingState,
-    useReactTable,
-} from "@tanstack/react-table";
-
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { DataTableToolbar } from "@/components/datatable/datatable-toolbar";
-import { DataTablePagination } from "@/components/datatable/data-table-pagination";
+import { useState, useEffect, useMemo } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import useSWR from "swr"
 
 
+import { UserTableSkeleton } from "./user-table-skeleton"
 
-interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[];
-    data: TData[];
-    server: {
-        page: number;
-        pageSize: number;
-        total: number;
-        setPage: (p: number) => void;
-        setPageSize: (n: number) => void;
-        setSortBy: (col: string) => void;
-        setSortDirection: (dir: "asc" | "desc") => void;
-    };
-    toolbar: {
-        search: string;
-        setSearch: (v: string) => void;
-        role?: string;
-        setRole: (v: string | undefined) => void;
-    };
-}
+import { UserTableFilters } from "./user-table-filters"
+import { DataTable } from "@/components/datatable/data-table"
+import { userTableColumns } from "./users-columns"
+import { UserTableError } from "./user-table-error"
 
-export function UserTable<TData extends Record<string, any>, TValue>({
-    columns,
-    data,
-    server,
-    toolbar,
-}: DataTableProps<TData, TValue>) {
-    const [sorting, setSorting] = React.useState<SortingState>([]);
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-    const table = useReactTable({
-        data,
-        columns,
-        state: {
-            sorting,
-            pagination: {
-                pageIndex: server.page - 1,
-                pageSize: server.pageSize,
-            },
-        },
+export default function UsersDataTable() {
+    const router = useRouter()
+    const searchParams = useSearchParams()
 
-        manualPagination: true,
-        manualSorting: true,
+    // State untuk filter
+    const [role, setRole] = useState(searchParams.get("role") || "all")
+    const [status, setStatus] = useState(searchParams.get("status") || "all")
+    const [search, setSearch] = useState(searchParams.get("search") || "")
+    const [debouncedSearch, setDebouncedSearch] = useState(search)
+    const [page, setPage] = useState(Number(searchParams.get("page")) || 1)
+    const limit = 10
 
-        pageCount: Math.ceil(server.total / server.pageSize),
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search)
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [search])
 
-        onSortingChange: (sort) => {
-            setSorting(sort);
-            const s = sort[0];
-            if (s) {
-                server.setSortBy(s.id);
-                server.setSortDirection(s.desc ? "desc" : "asc");
-            }
-        },
+    // Update URL ketika filter berubah
+    useEffect(() => {
+        const params = new URLSearchParams()
+        if (role && role !== "all") params.set("role", role)
+        if (status && status !== "all") params.set("status", status)
+        if (debouncedSearch) params.set("search", debouncedSearch)
+        if (page > 1) params.set("page", String(page))
+        params.set("limit", String(limit))
 
-        onPaginationChange: (updater) => {
-            const next =
-                typeof updater === "function"
-                    ? updater({
-                        pageIndex: server.page - 1,
-                        pageSize: server.pageSize,
-                    })
-                    : updater;
+        const newUrl = `?${params.toString()}`
+        router.replace(newUrl, { scroll: false })
+    }, [role, status, debouncedSearch, page, router])
 
-            if (next.pageIndex !== server.page - 1)
-                server.setPage(next.pageIndex + 1);
+    // Build SWR key dengan semua parameter
+    const swrKey = useMemo(() => {
+        const params = new URLSearchParams()
+        if (role && role !== "all") params.set("role", role)
+        if (status && status !== "all") params.set("status", status)
+        if (debouncedSearch) params.set("search", debouncedSearch)
+        params.set("page", String(page))
+        params.set("limit", String(limit))
+        return `/api/user?${params.toString()}`
+    }, [role, status, debouncedSearch, page, limit])
 
-            if (next.pageSize !== server.pageSize)
-                server.setPageSize(next.pageSize);
-        },
+    const { data, error, mutate, isLoading, isValidating } = useSWR(swrKey, fetcher, {
+        revalidateOnFocus: false,
+        dedupingInterval: 2000,
+        keepPreviousData: true,
+    })
 
-        getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-    });
+    const users = data?.users || []
+
+    if (error) {
+        return <UserTableError onRetry={() => mutate()} />
+    }
 
     return (
-        <div className="space-y-4">
-            {/* ✅ Toolbar */}
-            <DataTableToolbar
-                table={table}
-                searchValue={toolbar.search}
-                onSearchChange={toolbar.setSearch}
-                roleValue={toolbar.role}
-                onRoleChange={toolbar.setRole}
+        <div className="space-y-6">
+            <UserTableFilters
+                search={search}
+                onSearchChange={(value) => {
+                    setSearch(value)
+                    setPage(1)
+                }}
+                role={role}
+                onRoleChange={(value) => {
+                    setRole(value)
+                    setPage(1)
+                }}
+                status={status}
+                onStatusChange={(value) => {
+                    setStatus(value)
+                    setPage(1)
+                }}
+                onRefresh={() => mutate()}
+                onExport={() => {
+                    // Export logic here
+                }}
+                isValidating={isValidating}
+                isLoading={isLoading}
             />
 
-            {/* ✅ Table */}
-            <div className="overflow-hidden rounded-md border">
-                <Table>
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                            )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-
-                    <TableBody>
-                        {table.getRowModel().rows.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow key={row.id}>
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                            )}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className="h-24 text-center"
-                                >
-                                    Tidak ada hasil
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-
-            <DataTablePagination table={table} />
+            {isLoading ? (
+                <UserTableSkeleton />
+            ) : (
+                <div className="rounded-md border p-3">
+                    <DataTable
+                        columns={userTableColumns(mutate)}
+                        data={users}
+                    />
+                </div>
+            )}
         </div>
-    );
+    )
 }

@@ -2,7 +2,9 @@
 import { Main } from '@/components/main';
 import { DialogProvider } from '@/context/dialog-provider';
 import { Metadata } from 'next';
-import UsersClient from './components/user-client';
+
+import { UserDialogs } from './components/user-dialogs';
+import UsersDataTable from './components/user-table';
 
 
 export const metadata: Metadata = {
@@ -27,7 +29,8 @@ export default async function PenggunaPage() {
                     {/* <UsersPrimaryButtons /> */}
 
                 </div>
-                <UsersClient />
+                <UsersDataTable />
+                <UserDialogs />
             </Main>
         </DialogProvider>
     )

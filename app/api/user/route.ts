@@ -1,5 +1,5 @@
-import { getUsers } from '@/app/(main)/master-data/pengguna/data/action';
 import { NextRequest, NextResponse } from 'next/server';
+import { getUsers } from '@/app/(main)/master-data/pengguna/data/action';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,8 +14,7 @@ export async function GET(request: NextRequest) {
     }
     const role = searchParams.get('role') || undefined;
     const status = searchParams.get('status') || undefined;
-    const email = searchParams.get('email') || undefined;
-    const name = searchParams.get('name') || undefined;
+    const search = searchParams.get('search') || undefined; // Terima parameter search
 
     // Pass all filters and sort to getUsers
     const { users, total } = await getUsers({
@@ -25,8 +24,8 @@ export async function GET(request: NextRequest) {
       sortDirection,
       role,
       status,
-      email,
-      name,
+      email: search, // Search bisa untuk email
+      name: search, // Dan juga untuk name
     });
 
     return NextResponse.json({
