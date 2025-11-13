@@ -9,7 +9,7 @@ import {
     LogOut,
     Sparkles,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
     DropdownMenu,
@@ -36,9 +36,14 @@ import { Skeleton } from './ui/skeleton'
 export function NavUser() {
     const { isMobile } = useSidebar()
     const [open, setOpen] = useState(false)
-    const { data: session, isPending } = authClient.useSession()
+    const { data: session, isPending, refetch, error } = authClient.useSession()
     const user = session?.user
-    console.log('Session NavUser', user);
+
+    useEffect(() => {
+        refetch()
+    }, [])
+
+    console.log("NavUser session error:", error);
 
     return (
         <>

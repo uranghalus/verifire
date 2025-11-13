@@ -23,6 +23,11 @@ import { ShieldUser, Shield, Binoculars, UserStar, User, CheckCircle, XCircle, B
 import { useSearchParams } from "next/navigation"
 import useSWR from "swr"
 import { useDialog } from "@/context/dialog-provider"
+import z from "zod"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -35,7 +40,20 @@ const roles = [
     { label: 'User', value: 'user', icon: User },
 ];
 
-
+// Schema validation dengan Zod
+const addUserSchema = z.object({
+    name: z.string().min(1, "Name is required").max(100, "Name is too long"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    role: z.enum(["admin", "superadmin", "inspektor", "manager", "user"]),
+})
+const editUserSchema = z.object({
+    name: z.string().min(1, "Name is required").max(100, "Name is too long"),
+    email: z.string().email("Invalid email address"),
+    role: z.enum(["admin", "superadmin", "inspektor", "manager", "user"]),
+})
+type EditUserFormValues = z.infer<typeof editUserSchema>
+type AddUserFormValues = z.infer<typeof addUserSchema>
 
 // Helper function untuk get role badge
 const getRoleBadge = (role: string) => {
@@ -126,43 +144,76 @@ export function UserDialogs() {
     function formatDateForInput(date: Date) {
         return new Date(date).toISOString().split('T')[0]
     }
+    const editForm = useForm<EditUserFormValues>({
+        resolver: zodResolver(editUserSchema),
+        defaultValues: {
+            name: "",
+            email: "",
+            role: "user",
+        },
+        mode: "onChange",
+    })
+    useEffect(() => {
+        if (open === "edit" && currentRow) {
+            editForm.reset({
+                name: currentRow.name,
+                email: currentRow.email,
+                role: (currentRow.role as EditUserFormValues['role']) || "user",
+            })
+        }
+    }, [open, currentRow, editForm])
+    const isEditFormValid = editForm.formState.isValid
 
-    const handleEdit = async () => {
+    // Handler untuk submit edit
+    const handleEdit = async (data: EditUserFormValues) => {
         setLoading(true)
 
         toast.promise(
             async () => {
-                const response = await fetch(`/api/user/${currentRow?.id}`, {
+                if (!currentRow?.id) throw new Error("No user selected")
+
+                const response = await fetch(`/api/user/${currentRow.id}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        name: formData.name,
-                        email: formData.email,
-                        role: formData.role
+                        name: data.name,
+                        email: data.email,
+                        role: data.role,
                     }),
                 })
 
-                if (!response.ok) {
-                    const result = await response.json()
-                    throw new Error(result.error || "Failed to update user")
-                }
+                const result = await response.json()
+
+                if (!response.ok) throw new Error(result.error || "Failed to update user")
 
                 mutate()
                 setOpen(null)
                 return "User updated successfully"
             },
             {
-                loading: 'Updating user...',
+                loading: "Updating user...",
                 success: (message) => message,
                 error: (error) => error.message || "Failed to update user",
-                finally: () => setLoading(false)
+                finally: () => setLoading(false),
             }
         )
     }
 
-    const handleAdd = async () => {
+    // Form setup dengan react-hook-form & zod
+    const form = useForm<AddUserFormValues>({
+        resolver: zodResolver(addUserSchema),
+        defaultValues: {
+            name: "",
+            email: "",
+            password: "",
+            role: "user",
+        },
+        mode: "onChange"
+    })
+    // 
+    const handleAdd = async (data: AddUserFormValues) => {
         setLoading(true)
 
         toast.promise(
@@ -172,27 +223,35 @@ export function UserDialogs() {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify(formData),
+                    body: JSON.stringify(data),
                 })
 
+                const result = await response.json()
+
                 if (!response.ok) {
-                    const result = await response.json()
                     throw new Error(result.error || "Failed to create user")
                 }
 
+                // Refresh data
                 mutate()
                 setOpen(null)
+
                 return "User created successfully"
             },
             {
                 loading: 'Creating user...',
-                success: (message) => message,
-                error: (error) => error.message || "Failed to create user",
+                success: (message) => {
+                    return message
+                },
+                error: (error) => {
+                    console.error('Create user error:', error)
+                    return error.message || "Failed to create user"
+                },
                 finally: () => setLoading(false)
             }
         )
     }
-
+    // LINK delete handler
     const handleDelete = async () => {
         setLoading(true)
 
@@ -219,7 +278,7 @@ export function UserDialogs() {
             }
         )
     }
-
+    // LINK ban/unban handler
     const handleBan = async () => {
         setLoading(true)
 
@@ -256,7 +315,7 @@ export function UserDialogs() {
             }
         )
     }
-
+    // LINK reset password handler
     const handleResetPassword = async () => {
         setLoading(true)
 
@@ -283,6 +342,7 @@ export function UserDialogs() {
         )
     }
 
+    const isFormValid = form.formState.isValid
 
     return (
         <>
@@ -292,138 +352,225 @@ export function UserDialogs() {
                     <DialogHeader>
                         <DialogTitle>Add New User</DialogTitle>
                         <DialogDescription>
-                            Create a new user account. The user will receive an email to verify their account.
+                            Create a new user account. The user will be able to login immediately.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="add-name" className="text-right">
-                                Name
-                            </Label>
-                            <Input
-                                id="add-name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="col-span-3"
-                                required
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="add-email" className="text-right">
-                                Email
-                            </Label>
-                            <Input
-                                id="add-email"
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="col-span-3"
-                                required
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="add-password" className="text-right">
-                                Password
-                            </Label>
-                            <Input
-                                id="add-password"
-                                type="password"
-                                value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                className="col-span-3"
-                                required
-                                minLength={6}
-                                placeholder="Minimum 6 characters"
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="add-role" className="text-right">
-                                Role
-                            </Label>
-                            <select
-                                id="add-role"
-                                value={formData.role}
-                                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                className="col-span-3 border rounded-md p-2"
-                            >
-                                {roles.map((role) => (
-                                    <option key={role.value} value={role.value}>
-                                        {role.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setOpen(null)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleAdd} disabled={loading}>
-                            {loading ? "Creating..." : "Create User"}
-                        </Button>
-                    </DialogFooter>
+
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleAdd)} className="space-y-6">
+                            <div className="space-y-4">
+                                {/* Name Field */}
+                                <FormField
+                                    control={form.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Name *</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Enter full name"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Email Field */}
+                                <FormField
+                                    control={form.control}
+                                    name="email"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Email *</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="email"
+                                                    placeholder="Enter email address"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Password Field */}
+                                <FormField
+                                    control={form.control}
+                                    name="password"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Password *</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="password"
+                                                    placeholder="Minimum 6 characters"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Role Field */}
+                                <FormField
+                                    control={form.control}
+                                    name="role"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Role</FormLabel>
+                                            <Select
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select a role" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {roles.map((role) => (
+                                                        <SelectItem key={role.value} value={role.value}>
+                                                            <div className="flex items-center gap-2">
+                                                                <role.icon className="h-4 w-4" />
+                                                                {role.label}
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setOpen(null)}
+                                    disabled={loading}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={loading || !isFormValid}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        "Create User"
+                                    )}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
                 </DialogContent>
             </Dialog>
 
             {/* Edit User Dialog */}
-            <Dialog open={open === 'edit'} onOpenChange={() => setOpen(null)}>
+            <Dialog open={open === "edit"} onOpenChange={() => setOpen(null)}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle>Edit User</DialogTitle>
                         <DialogDescription>
-                            Update user information for {currentRow?.name}.
+                            Update user information for <strong>{currentRow?.name}</strong>.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-name" className="text-right">
-                                Name
-                            </Label>
-                            <Input
-                                id="edit-name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="col-span-3"
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-email" className="text-right">
-                                Email
-                            </Label>
-                            <Input
-                                id="edit-email"
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="col-span-3"
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-role" className="text-right">
-                                Role
-                            </Label>
-                            <select
-                                id="edit-role"
-                                value={formData.role}
-                                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                className="col-span-3 border rounded-md p-2"
-                            >
-                                {roles.map((role) => (
-                                    <option key={role.value} value={role.value}>
-                                        {role.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setOpen(null)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleEdit} disabled={loading}>
-                            {loading ? "Saving..." : "Save Changes"}
-                        </Button>
-                    </DialogFooter>
+
+                    <Form {...editForm}>
+                        <form onSubmit={editForm.handleSubmit(handleEdit)} className="space-y-6">
+                            <div className="space-y-4">
+                                {/* Name */}
+                                <FormField
+                                    control={editForm.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Name *</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="Enter full name" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Email */}
+                                <FormField
+                                    control={editForm.control}
+                                    name="email"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Email *</FormLabel>
+                                            <FormControl>
+                                                <Input type="email" placeholder="Enter email address" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                {/* Role */}
+                                <FormField
+                                    control={editForm.control}
+                                    name="role"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Role</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select a role" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {roles.map((role) => (
+                                                        <SelectItem key={role.value} value={role.value}>
+                                                            <div className="flex items-center gap-2">
+                                                                <role.icon className="h-4 w-4" />
+                                                                {role.label}
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setOpen(null)} disabled={loading}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={loading || !isEditFormValid}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        "Save Changes"
+                                    )}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
                 </DialogContent>
             </Dialog>
 
@@ -432,18 +579,20 @@ export function UserDialogs() {
                 <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
                         <DialogTitle>Delete User</DialogTitle>
-                        <DialogDescription className="flex items-start gap-3">
-                            <Avatar className="h-10 w-10">
-                                <AvatarImage src={currentRow?.avatarUrl} alt={currentRow?.name} />
-                                <AvatarFallback>
-                                    {currentRow?.name?.substring(0, 2).toUpperCase() || "U"}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-medium">{currentRow?.name}</p>
-                                <p className="text-sm text-muted-foreground">{currentRow?.email}</p>
-                                <div className="mt-2">
-                                    Are you sure you want to delete this user? This action cannot be undone.
+                        <DialogDescription asChild>
+                            <div className="flex items-start gap-3">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={currentRow?.avatarUrl} alt={currentRow?.name} />
+                                    <AvatarFallback>
+                                        {currentRow?.name?.substring(0, 2).toUpperCase() || "U"}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-medium">{currentRow?.name}</p>
+                                    <p className="text-sm text-muted-foreground">{currentRow?.email}</p>
+                                    <div className="mt-2">
+                                        Are you sure you want to delete this user? This action cannot be undone.
+                                    </div>
                                 </div>
                             </div>
                         </DialogDescription>
@@ -511,17 +660,19 @@ export function UserDialogs() {
             <Dialog open={open === 'ban'} onOpenChange={() => setOpen(null)}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>Ban User</DialogTitle>
-                        <DialogDescription className="flex items-start gap-3">
-                            <Avatar className="h-10 w-10">
-                                <AvatarImage src={currentRow?.avatarUrl} alt={currentRow?.name} />
-                                <AvatarFallback>
-                                    {currentRow?.name?.substring(0, 2).toUpperCase() || "U"}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-medium">{currentRow?.name}</p>
-                                <p className="text-sm text-muted-foreground">{currentRow?.email}</p>
+                        <DialogTitle className="mb-2">Ban User</DialogTitle>
+                        <DialogDescription asChild>
+                            <div className="flex items-start gap-3 rounded-md border p-3">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={currentRow?.avatarUrl} alt={currentRow?.name} />
+                                    <AvatarFallback>
+                                        {currentRow?.name?.substring(0, 2).toUpperCase() || "U"}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-medium">{currentRow?.name}</p>
+                                    <p className="text-sm text-muted-foreground">{currentRow?.email}</p>
+                                </div>
                             </div>
                         </DialogDescription>
                     </DialogHeader>
@@ -574,21 +725,23 @@ export function UserDialogs() {
                 <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
                         <DialogTitle>Unban User</DialogTitle>
-                        <DialogDescription className="flex items-start gap-3">
-                            <Avatar className="h-10 w-10">
-                                <AvatarImage src={currentRow?.avatarUrl} alt={currentRow?.name} />
-                                <AvatarFallback>
-                                    {currentRow?.name?.substring(0, 2).toUpperCase() || "U"}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-medium">{currentRow?.name}</p>
-                                <p className="text-sm text-muted-foreground">{currentRow?.email}</p>
-                                {currentRow?.banReason && (
-                                    <div className="mt-2 p-2 bg-muted rounded text-sm">
-                                        <span className="font-medium">Ban reason:</span> {currentRow.banReason}
-                                    </div>
-                                )}
+                        <DialogDescription asChild>
+                            <div className="flex items-start gap-3 rounded-md border p-3 bg-muted/50">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={currentRow?.avatarUrl} alt={currentRow?.name} />
+                                    <AvatarFallback>
+                                        {currentRow?.name?.substring(0, 2).toUpperCase() || "U"}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-medium">{currentRow?.name}</p>
+                                    <p className="text-sm text-muted-foreground">{currentRow?.email}</p>
+                                    {currentRow?.banReason && (
+                                        <div className="mt-2 p-2 bg-muted rounded text-sm">
+                                            <span className="font-medium">Ban reason:</span> {currentRow.banReason}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </DialogDescription>
                     </DialogHeader>
@@ -611,16 +764,18 @@ export function UserDialogs() {
                 <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
                         <DialogTitle>Reset Password</DialogTitle>
-                        <DialogDescription className="flex items-start gap-3">
-                            <Avatar className="h-10 w-10">
-                                <AvatarImage src={currentRow?.avatarUrl} alt={currentRow?.name} />
-                                <AvatarFallback>
-                                    {currentRow?.name?.substring(0, 2).toUpperCase() || "U"}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-medium">{currentRow?.name}</p>
-                                <p className="text-sm text-muted-foreground">{currentRow?.email}</p>
+                        <DialogDescription asChild>
+                            <div className="flex items-start gap-3">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={currentRow?.avatarUrl} alt={currentRow?.name} />
+                                    <AvatarFallback>
+                                        {currentRow?.name?.substring(0, 2).toUpperCase() || "U"}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-medium">{currentRow?.name}</p>
+                                    <p className="text-sm text-muted-foreground">{currentRow?.email}</p>
+                                </div>
                             </div>
                         </DialogDescription>
                     </DialogHeader>

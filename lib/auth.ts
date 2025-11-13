@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { admin as adminPg } from 'better-auth/plugins';
+import { admin as adminPg, username } from 'better-auth/plugins';
 import prisma from './prisma';
 import { ac, admin, inspector, manager, superadmin } from './permissions';
 import { nextCookies } from 'better-auth/next-js';
@@ -23,6 +23,7 @@ export const auth = betterAuth({
   trustedOrigins: ['http://192.168.91.37:3000'],
   plugins: [
     nextCookies(),
+    username(),
     adminPg({
       // adminRoles: ['admin', 'superadmin'],
       ac,
