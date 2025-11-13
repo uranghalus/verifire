@@ -28,10 +28,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
-    const data = await authClient.admin.updateUser({
-      userId,
-      data: { name, email, role },
-      //   asResponse: true,
+    const data = await auth.api.adminUpdateUser({
+      body: {
+        userId,
+        data: { name, email, role },
+      },
+      headers: await headers(),
+      asResponse: true,
     });
     console.log('Better Auth update result:', data);
     if (!data) {
