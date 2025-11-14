@@ -29,8 +29,13 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
-  username        String?
-  displayUsername String? @db.Text
+  username           String?
+  displayUsername    String?             @db.Text
+  // Relations
+  apars              Apar[]
+  hydrants           Hydrant[]
+  aparInspections    AparInspection[]
+  hydrantInspections HydrantInspection[]
 
   @@unique([email])
   @@unique([username])
@@ -81,4 +86,84 @@ model Verification {
   updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("verification")
+}
+
+model Apar {
+  id        String   @id @default(cuid())
+  kode_apar String   @unique @db.VarChar(25)
+  lantai    String?
+  lokasi    String
+  jenis     String // CO2, Powder, Foam, Air
+  size      Float // 2.0, 4.0, 6.0, 9.0 (dalam kg)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  aparInspections AparInspection[]
+
+  @@map("apar")
+}
+
+model Hydrant {
+  id           String   @id @default(cuid())
+  kode_unik    String   @unique
+  kode_hydrant String   @unique @db.VarChar(25)
+  ukuran       String
+  lantai       String?
+  lokasi       String
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  hydrantInspections HydrantInspection[]
+
+  @@map("hydrant")
+}
+
+model AparInspection {
+  id                 String    @id @default(cuid())
+  aparId             String?
+  apar               Apar?     @relation(fields: [aparId], references: [id], onDelete: SetNull)
+  userId             String?
+  user               User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  nama_petugas       String?   @db.VarChar(150)
+  regu               String    @default("PAGI") // PAGI, SIANG, MALAM, MIDDLE
+  tanggal_kadaluarsa DateTime?
+  tanggal_refill     DateTime?
+  kondisi            String?   @db.VarChar(150)
+  catatan            String?
+  foto_apar          String?
+  tanggal_inspeksi   DateTime  @default(now())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("apar_inspections")
+}
+
+model HydrantInspection {
+  id                         String   @id @default(cuid())
+  hydrantId                  String?
+  hydrant                    Hydrant? @relation(fields: [hydrantId], references: [id], onDelete: SetNull)
+  userId                     String?
+  user                       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  regu                       String   @default("PAGI") // PAGI, SIANG, MALAM, MIDDLE
+  nama_petugas               String?  @db.VarChar(150)
+  valve_machino_coupling     String?  @db.VarChar(150)
+  fire_hose_machino_coupling String?  @db.VarChar(150)
+  selang_hydrant             String?  @db.VarChar(150)
+  noozle_hydrant             String?  @db.VarChar(150)
+  kaca_box_hydrant           String?  @db.VarChar(150)
+  kunci_box_hydrant          String?  @db.VarChar(150)
+  box_hydrant                String?  @db.VarChar(150)
+  alarm                      String?  @db.VarChar(150)
+  foto_hydrant               String?
+  tanggal_inspeksi           DateTime @default(now())
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("hydrant_inspections")
 }
