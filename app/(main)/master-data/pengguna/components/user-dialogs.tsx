@@ -194,7 +194,13 @@ export function UserDialogs() {
             },
             {
                 loading: "Updating user...",
-                success: (message) => message,
+                description: "Sedang memperbarui data user.",
+                success: (message) => {
+                    return {
+                        message: 'Berhasil!!',
+                        description: message
+                    }
+                },
                 error: (error) => error.message || "Failed to update user",
                 finally: () => setLoading(false),
             }
@@ -239,9 +245,13 @@ export function UserDialogs() {
                 return "User created successfully"
             },
             {
-                loading: 'Creating user...',
+                loading: 'Tunggu Sebentar...',
+                description: 'Sedang membuat user baru.',
                 success: (message) => {
-                    return message
+                    return {
+                        message: 'Berhasil!!',
+                        description: message
+                    }
                 },
                 error: (error) => {
                     console.error('Create user error:', error)
@@ -272,7 +282,13 @@ export function UserDialogs() {
             },
             {
                 loading: 'Deleting user...',
-                success: (message) => message,
+                description: 'This action cannot be undone.',
+                success: (message) => {
+                    return {
+                        message: 'Berhasil!!',
+                        description: message
+                    }
+                },
                 error: (error) => error.message || "Failed to delete user",
                 finally: () => setLoading(false)
             }
@@ -309,7 +325,13 @@ export function UserDialogs() {
             },
             {
                 loading: `${action === 'ban' ? 'Banning' : 'Unbanning'} user...`,
-                success: (message) => message,
+                description: action === 'ban' ? 'Sedang memproses ban user.' : 'Sedang memproses unban user.',
+                success: (message) => {
+                    return {
+                        message: 'Berhasil!!',
+                        description: message
+                    }
+                },
                 error: (error) => error.message || `Failed to ${action} user`,
                 finally: () => setLoading(false)
             }
@@ -335,7 +357,12 @@ export function UserDialogs() {
             },
             {
                 loading: 'Sending reset password email...',
-                success: (message) => message,
+                success: (message) => {
+                    return {
+                        message: 'Berhasil!!',
+                        description: message
+                    }
+                },
                 error: (error) => error.message || "Failed to reset password",
                 finally: () => setLoading(false)
             }
