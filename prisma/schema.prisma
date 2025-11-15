@@ -88,26 +88,39 @@ model Verification {
   @@map("verification")
 }
 
-model Apar {
-  id        String   @id @default(cuid())
-  kode_apar String   @unique @db.VarChar(25)
-  lantai    String?
-  lokasi    String
-  jenis     String // CO2, Powder, Foam, Air
-  size      Float // 2.0, 4.0, 6.0, 9.0 (dalam kg)
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum Role {
+  ADMIN
+  SUPERADMIN
+  MANAGER
+  INSPECTOR
+}
 
-  // Relations
-  aparInspections AparInspection[]
+model Apar {
+  id        Int       @id @default(autoincrement())
+  kode_apar String    @unique @db.VarChar(25)
+  lantai    String?   @db.VarChar(255)
+  lokasi    String
+  jenis     JenisApar
+  size      Decimal   @db.Decimal(3, 1)
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  inspections AparInspection[]
 
   @@map("apar")
 }
 
+enum JenisApar {
+  CO2
+  Powder
+  Foam
+  Air
+}
+
 model Hydrant {
-  id           String   @id @default(cuid())
+  id           Int      @id @default(autoincrement())
   kode_unik    String   @unique
   kode_hydrant String   @unique @db.VarChar(25)
   ukuran       String
@@ -118,20 +131,19 @@ model Hydrant {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // Relations
-  hydrantInspections HydrantInspection[]
+  inspections HydrantInspection[]
 
   @@map("hydrant")
 }
 
 model AparInspection {
-  id                 String    @id @default(cuid())
-  aparId             String?
+  id                 Int       @id @default(autoincrement())
+  aparId             Int?
   apar               Apar?     @relation(fields: [aparId], references: [id], onDelete: SetNull)
   userId             String?
   user               User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   nama_petugas       String?   @db.VarChar(150)
-  regu               String    @default("PAGI") // PAGI, SIANG, MALAM, MIDDLE
+  regu               Regu      @default(PAGI)
   tanggal_kadaluarsa DateTime?
   tanggal_refill     DateTime?
   kondisi            String?   @db.VarChar(150)
@@ -145,12 +157,12 @@ model AparInspection {
 }
 
 model HydrantInspection {
-  id                         String   @id @default(cuid())
-  hydrantId                  String?
+  id                         Int      @id @default(autoincrement())
+  hydrantId                  Int?
   hydrant                    Hydrant? @relation(fields: [hydrantId], references: [id], onDelete: SetNull)
   userId                     String?
   user                       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  regu                       String   @default("PAGI") // PAGI, SIANG, MALAM, MIDDLE
+  regu                       Regu     @default(PAGI)
   nama_petugas               String?  @db.VarChar(150)
   valve_machino_coupling     String?  @db.VarChar(150)
   fire_hose_machino_coupling String?  @db.VarChar(150)
@@ -166,4 +178,11 @@ model HydrantInspection {
   updatedAt                  DateTime @updatedAt
 
   @@map("hydrant_inspections")
+}
+
+enum Regu {
+  PAGI
+  SIANG
+  MALAM
+  MIDDLE
 }
