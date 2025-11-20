@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 export interface UserWithDetails {
   id: string;
   name: string;
+  username?: string | null;
   email: string;
   verified: boolean;
   banned: boolean;
@@ -112,6 +113,7 @@ export async function getUsers(
       id: user.id,
       name: user.name,
       email: user.email,
+      username: user.username,
       verified: user.emailVerified,
       role: user.role,
       banned: user.banned ?? false,

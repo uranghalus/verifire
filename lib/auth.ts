@@ -18,6 +18,10 @@ export const auth = betterAuth({
         type: 'string',
         input: false,
       },
+      username: {
+        type: 'string',
+        input: true,
+      },
     },
   },
   trustedOrigins: ['http://192.168.91.37:3000'],

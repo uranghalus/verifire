@@ -18,12 +18,19 @@ import {
 import { SignOutDialog } from './auth/signout-dialog'
 import { authClient } from '@/lib/auth-client'
 import { Skeleton } from './ui/skeleton'
+import { useEffect } from 'react'
 
 
 export function ProfileDropdown() {
     const [open, setOpen] = useDialogState()
-    const { data, isPending } = authClient.useSession()
-    const user = data?.user
+    const { data: session, isPending, error, refetch } = authClient.useSession()
+    const user = session?.user
+
+    useEffect(() => {
+        const handler = () => refetch()
+        window.addEventListener("better-auth:refresh-session", handler)
+        return () => window.removeEventListener("better-auth:refresh-session", handler)
+    }, [refetch])
     return (
         <>
             <DropdownMenu modal={false}>

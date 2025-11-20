@@ -65,6 +65,7 @@ export default function UsersDataTable() {
     })
 
     const users = data?.users || []
+    console.log("Users Data:", users);
 
     if (error) {
         return <UserTableError onRetry={() => mutate()} />

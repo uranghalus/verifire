@@ -41,6 +41,18 @@ export const userTableColumns = (mutate: () => void): ColumnDef<UserWithDetails>
         },
     },
     {
+        accessorKey: "username",
+        header: "Username",
+        cell: ({ row }) => {
+
+            return (
+                <div className="flex gap-1">
+                    <span className="text-xs text-muted-foreground">{row.original.username}</span>
+                </div>
+            )
+        },
+    },
+    {
         accessorKey: "verified",
         header: "Verification",
         cell: ({ row }) => {
@@ -63,29 +75,7 @@ export const userTableColumns = (mutate: () => void): ColumnDef<UserWithDetails>
             )
         },
     },
-    {
-        accessorKey: "accounts",
-        header: "Linked Accounts",
-        cell: ({ row }) => {
-            const accounts = row.original.accounts
-            return (
-                <div className="flex gap-1">
-                    {accounts.map((account) => (
-                        <div
-                            key={account}
-                            className="rounded-full bg-muted p-1.5 text-muted-foreground dark:bg-neutral-700 dark:text-neutral-300"
-                            title={account.charAt(0).toUpperCase() + account.slice(1)}
-                        >
-                            {getAccountIcon(account)}
-                        </div>
-                    ))}
-                    {accounts.length === 0 && (
-                        <span className="text-xs text-muted-foreground">None</span>
-                    )}
-                </div>
-            )
-        },
-    },
+
     {
         accessorKey: "role",
         header: "Role",

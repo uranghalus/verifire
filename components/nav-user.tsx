@@ -30,27 +30,26 @@ import { SignOutDialog } from './auth/signout-dialog'
 import { authClient } from '@/lib/auth-client'
 import { Skeleton } from './ui/skeleton'
 
-
-
-
 export function NavUser() {
     const { isMobile } = useSidebar()
     const [open, setOpen] = useState(false)
-    const { data: session, isPending, refetch, error } = authClient.useSession()
+
+    // otomatis fetch session
+    const { data: session, isPending, error, refetch } = authClient.useSession()
     const user = session?.user
 
     useEffect(() => {
-        refetch()
-    }, [])
-
-    console.log("NavUser session error:", error);
+        const handler = () => refetch()
+        window.addEventListener("better-auth:refresh-session", handler)
+        return () => window.removeEventListener("better-auth:refresh-session", handler)
+    }, [refetch])
 
     return (
         <>
             <SidebarMenu>
                 <SidebarMenuItem>
                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger asChild disabled={isPending}>
                             <SidebarMenuButton
                                 size="lg"
                                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
@@ -63,18 +62,25 @@ export function NavUser() {
                                             <Skeleton className="h-4 w-[150px]" />
                                         </div>
                                     </div>
-                                ) : (<>
-                                    <Avatar className="h-8 w-8 rounded-lg">
-                                        <AvatarImage src={user?.image ?? ''} alt={user?.name} />
-                                        <AvatarFallback className="rounded-lg">
-                                            {user?.name?.[0]?.toUpperCase() ?? 'U'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="grid flex-1 text-start text-sm leading-tight">
-                                        <span className="truncate font-semibold">{user?.name}</span>
-                                        <span className="truncate text-xs">{user?.email}</span>
-                                    </div>
-                                </>)}
+                                ) : (
+                                    <>
+                                        <Avatar className="h-8 w-8 rounded-lg">
+                                            <AvatarImage
+                                                src={user?.image ?? ''}
+                                                alt={user?.name ?? ''}
+                                            />
+                                            <AvatarFallback className="rounded-lg">
+                                                {user?.name?.[0]?.toUpperCase() ?? 'U'}
+                                            </AvatarFallback>
+                                        </Avatar>
+
+                                        <div className="grid flex-1 text-start text-sm leading-tight">
+                                            <span className="truncate font-semibold">{user?.name}</span>
+                                            <span className="truncate text-xs">{user?.email}</span>
+                                        </div>
+                                    </>
+                                )}
+
                                 <ChevronsUpDown className="ms-auto size-4" />
                             </SidebarMenuButton>
                         </DropdownMenuTrigger>
@@ -88,11 +94,15 @@ export function NavUser() {
                             <DropdownMenuLabel className="p-0 font-normal">
                                 <div className="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                                     <Avatar className="h-8 w-8 rounded-lg">
-                                        <AvatarImage src={user?.image ?? ''} alt={user?.name} />
+                                        <AvatarImage
+                                            src={user?.image ?? ''}
+                                            alt={user?.name ?? ''}
+                                        />
                                         <AvatarFallback className="rounded-lg">
                                             {user?.name?.[0]?.toUpperCase() ?? 'U'}
                                         </AvatarFallback>
                                     </Avatar>
+
                                     <div className="grid flex-1 text-start text-sm leading-tight">
                                         <span className="truncate font-semibold">{user?.name}</span>
                                         <span className="truncate text-xs">{user?.email}</span>
@@ -136,7 +146,10 @@ export function NavUser() {
 
                             <DropdownMenuSeparator />
 
-                            <DropdownMenuItem onClick={() => setOpen(true)} className="flex items-center gap-2">
+                            <DropdownMenuItem
+                                onClick={() => setOpen(true)}
+                                className="flex items-center gap-2"
+                            >
                                 <LogOut />
                                 Sign out
                             </DropdownMenuItem>

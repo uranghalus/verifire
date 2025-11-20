@@ -28,6 +28,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { authClient } from "@/lib/auth-client"
+
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -44,11 +46,13 @@ const roles = [
 const addUserSchema = z.object({
     name: z.string().min(1, "Name is required").max(100, "Name is too long"),
     email: z.string().email("Invalid email address"),
+    username: z.string().min(1, "Username is required").max(50, "Username is too long"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     role: z.enum(["admin", "superadmin", "inspektor", "manager", "user"]),
 })
 const editUserSchema = z.object({
     name: z.string().min(1, "Name is required").max(100, "Name is too long"),
+    username: z.string().optional(),
     email: z.string().email("Invalid email address"),
     role: z.enum(["admin", "superadmin", "inspektor", "manager", "user"]),
 })
@@ -188,6 +192,14 @@ export function UserDialogs() {
 
                 if (!response.ok) throw new Error(result.error || "Failed to update user")
 
+                // ⭐ Ambil session user login
+                const { data: session } = await authClient.getSession()
+
+                // ⭐ Jika user yang di-edit adalah user login → refresh session
+                if (session?.user?.id === currentRow.id) {
+                    window.dispatchEvent(new Event("better-auth:refresh-session"))
+                }
+
                 mutate()
                 setOpen(null)
                 return "User updated successfully"
@@ -211,6 +223,7 @@ export function UserDialogs() {
     const form = useForm<AddUserFormValues>({
         resolver: zodResolver(addUserSchema),
         defaultValues: {
+            username: "",
             name: "",
             email: "",
             password: "",
@@ -403,7 +416,20 @@ export function UserDialogs() {
                                         </FormItem>
                                     )}
                                 />
-
+                                <FormField
+                                    control={form.control}
+                                    name='username'
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Username *</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Enter Username"
+                                                    {...field} />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
                                 {/* Email Field */}
                                 <FormField
                                     control={form.control}

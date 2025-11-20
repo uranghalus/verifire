@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, password, role } = body;
+    const { name, email, password, role, username } = body;
 
     // 🧩 Validasi input dasar
     if (!name || !email || !password) {
@@ -81,6 +81,9 @@ export async function POST(request: NextRequest) {
         password,
         name,
         role: role || 'user',
+        data: {
+          username,
+        },
       },
     });
 
