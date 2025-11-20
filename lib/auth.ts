@@ -1,9 +1,9 @@
-import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { admin as adminPg, username } from 'better-auth/plugins';
 import prisma from './prisma';
 import { ac, admin, inspector, manager, superadmin } from './permissions';
 import { nextCookies } from 'better-auth/next-js';
+import { betterAuth } from 'better-auth';
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: 'mysql',
@@ -41,4 +41,4 @@ export const auth = betterAuth({
   ],
 });
 export type Session = typeof auth.$Infer.Session;
-export type User = typeof auth.$Infer.Session.user;
+export type BaseUser = typeof auth.$Infer.Session.user;
