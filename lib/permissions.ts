@@ -54,7 +54,6 @@ export const admin = ac.newRole({
   report: ['view', 'create', 'edit', 'delete'],
   user: [
     'list',
-    'create',
     'edit',
     'update',
     'delete',

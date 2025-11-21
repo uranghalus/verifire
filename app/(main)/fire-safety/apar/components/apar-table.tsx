@@ -1,111 +1,107 @@
-'use client '
-/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
-import React, { useMemo, useState } from 'react'
-import useSWR from 'swr'
-import { useDialog } from '@/context/dialog-provider'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { columns } from './apar-columns'
+import {
+    ColumnDef,
+    ColumnFiltersState,
+    flexRender,
+    getCoreRowModel,
+    getFacetedRowModel,
+    getFacetedUniqueValues,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    RowData,
+    SortingState,
+    useReactTable,
+    VisibilityState,
+} from "@tanstack/react-table";
+import { useState } from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Apar } from "@/types";
+import AparToolbar from "./apar-toolbar";
+import { DataTablePagination } from "@/components/datatable/data-table-pagination";
 
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+declare module "@tanstack/react-table" {
+    interface ColumnMeta<TData extends RowData, TValue> {
+        className?: string;
+    }
+}
 
-export function AparDataTable() {
-    const { open } = useDialog()
+interface Props {
+    columns: ColumnDef<Apar>[];
+    data: Apar[];
+}
 
-    const [page, setPage] = useState(1)
-    const [pageSize, setPageSize] = useState(10)
-    const [search, setSearch] = useState('')
-    const [lantai, setLantai] = useState('')
-    const [jenis, setJenis] = useState('')
-    const [sizeMin, setSizeMin] = useState('')
-    const [sizeMax, setSizeMax] = useState('')
+export default function AparTable({ columns, data }: Props) {
+    const [rowSelection, setRowSelection] = useState({});
+    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+    const [sorting, setSorting] = useState<SortingState>([]);
 
-    const query = useMemo(() => {
-        const params = new URLSearchParams()
-        params.set('page', String(page))
-        params.set('pageSize', String(pageSize))
-
-        if (search) params.set('search', search)
-        if (lantai) params.set('lantai', lantai)
-        if (jenis) params.set('jenis', jenis)
-        if (sizeMin) params.set('sizeMin', sizeMin)
-        if (sizeMax) params.set('sizeMax', sizeMax)
-
-        return params.toString()
-    }, [page, pageSize, search, lantai, jenis, sizeMin, sizeMax])
-
-    const { data, mutate } = useSWR(`/api/apar?${query}`, fetcher, { revalidateOnFocus: false })
-
-    const items = data?.data ?? []
-    const total = data?.total ?? 0
+    const table = useReactTable({
+        data,
+        columns,
+        state: {
+            sorting,
+            columnVisibility,
+            rowSelection,
+            columnFilters,
+        },
+        enableRowSelection: true,
+        onRowSelectionChange: setRowSelection,
+        onSortingChange: setSorting,
+        onColumnFiltersChange: setColumnFilters,
+        onColumnVisibilityChange: setColumnVisibility,
+        getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getFacetedRowModel: getFacetedRowModel(),
+        getFacetedUniqueValues: getFacetedUniqueValues(),
+    });
 
     return (
-        <div className="mt-6">
-            {/* FILTERS */}
-            <div className="flex flex-wrap gap-2 mb-4">
-                <Input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} placeholder="Cari kode/lokasi..." className="w-48" />
-                <Input value={lantai} onChange={(e) => { setLantai(e.target.value); setPage(1) }} placeholder="Lantai" className="w-32" />
-                <select value={jenis} onChange={(e) => { setJenis(e.target.value); setPage(1) }} className="border rounded px-2 w-32 h-10">
-                    <option value="">Jenis</option>
-                    <option value="CABUT">CABUT</option>
-                    <option value="CO2">CO2</option>
-                    <option value="DRY">DRY</option>
-                </select>
-                <Input value={sizeMin} onChange={(e) => { setSizeMin(e.target.value); setPage(1) }} placeholder="size min" className="w-24" />
-                <Input value={sizeMax} onChange={(e) => { setSizeMax(e.target.value); setPage(1) }} placeholder="size max" className="w-24" />
-            </div>
+        <div className="space-y-4">
+            <AparToolbar table={table} />
 
-            {/* TABLE */}
-            <div className="overflow-auto">
-                <table className="min-w-full divide-y">
-                    <thead className="bg-muted">
-                        <tr>
-                            {columns.map((col, idx) => (
-                                <th key={col.id ?? idx} className="px-3 py-2 text-left text-sm font-medium">{col.header as string}</th>
-                            ))}
-                            <th className="px-3 py-2">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {items.map((item: any) => (
-                            <tr key={item.id} className="border-b">
-                                <td className="px-3 py-2">{item.kode_apar}</td>
-                                <td className="px-3 py-2">{item.lantai}</td>
-                                <td className="px-3 py-2">{item.lokasi}</td>
-                                <td className="px-3 py-2">{item.jenis}</td>
-                                <td className="px-3 py-2">{item.size}</td>
-                                <td className="px-3 py-2">{new Date(item.updatedAt).toLocaleString()}</td>
-                                <td className="px-3 py-2 flex gap-2">
-                                    <Button size="sm" onClick={() => open('edit-apar', item)}>Edit</Button>
-                                    <Button size="sm" variant="destructive" onClick={async () => {
-                                        if (!confirm('Hapus data?')) return
-                                        await fetch(`/api/apar/${item.id}`, { method: 'DELETE' })
-                                        mutate()
-                                    }}>Delete</Button>
-                                </td>
-                            </tr>
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        {table.getHeaderGroups().map((headerGroup) => (
+                            <TableRow key={headerGroup.id} className="group/row">
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead key={header.id} colSpan={header.colSpan} className={header.column.columnDef.meta?.className ?? ""}>
+                                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                                    </TableHead>
+                                ))}
+                            </TableRow>
                         ))}
-                    </tbody>
-                </table>
+                    </TableHeader>
+
+                    <TableBody>
+                        {table.getRowModel().rows?.length ? (
+                            table.getRowModel().rows.map((row) => (
+                                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className="group/row">
+                                    {row.getVisibleCells().map((cell) => (
+                                        <TableCell key={cell.id} className={cell.column.columnDef.meta?.className ?? ""}>
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={columns.length} className="h-24 text-center">
+                                    No results.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
             </div>
 
-            {/* PAGINATION */}
-            <div className="flex items-center justify-between mt-4">
-                <span>Showing {items.length} of {total}</span>
-                <div className="flex gap-2">
-                    <Button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Prev</Button>
-                    <span className="px-2 py-1">Page {page}</span>
-                    <Button onClick={() => setPage(p => p + 1)} disabled={page * pageSize >= total}>Next</Button>
-                    <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }} className="border rounded px-2 h-10">
-                        <option value={5}>5</option>
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                        <option value={50}>50</option>
-                    </select>
-                </div>
-            </div>
+            <DataTablePagination table={table} />
         </div>
-    )
+    );
 }

@@ -2,27 +2,53 @@
 
 import React from 'react';
 import { ColumnDef } from '@tanstack/react-table';
+import { Apar } from '@/types';
 
-export type AparRow = {
-    id: number;
-    kode_apar: string;
-    lantai?: string | null;
-    lokasi: string;
-    jenis: string;
-    size: number;
-    createdAt: string;
-    updatedAt: string;
-};
-
-export const columns: ColumnDef<AparRow>[] = [
-    { accessorKey: 'kode_apar', header: 'Kode' },
-    { accessorKey: 'lantai', header: 'Lantai' },
-    { accessorKey: 'lokasi', header: 'Lokasi' },
-    { accessorKey: 'jenis', header: 'Jenis' },
-    { accessorKey: 'size', header: 'Size' },
+export const columns: ColumnDef<Apar>[] = [
     {
-        accessorKey: 'updatedAt',
-        header: 'Terakhir',
-        cell: info => new Date(info.getValue() as string).toLocaleString(),
+        accessorKey: "kode_apar",
+        header: "Kode APAR",
+        meta: { className: "w-[150px]" },
+    },
+    {
+        accessorKey: "lantai",
+        header: "Lantai",
+        meta: { className: "w-[120px]" },
+    },
+    {
+        accessorKey: "lokasi",
+        header: "Lokasi",
+        meta: { className: "w-[200px]" },
+    },
+    {
+        accessorKey: "jenis",
+        header: "Jenis",
+        meta: { className: "w-[120px]" },
+    },
+    {
+        accessorKey: "size",
+        header: "Size (Kg)",
+        cell: ({ row }) => <span>{row.original.size} Kg</span>,
+        meta: { className: "w-[100px]" },
+    },
+    {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => (
+            <div className="flex gap-2">
+                <button
+                    type="button"
+                    data-id={row.original.id}
+                    className="text-sm text-blue-600"
+                // The parent page will handle open edit/delete via callbacks if needed
+                >
+                    Edit
+                </button>
+                <button type="button" data-id={row.original.id} className="text-sm text-red-600">
+                    Delete
+                </button>
+            </div>
+        ),
+        meta: { className: "w-[140px] text-right" },
     },
 ];

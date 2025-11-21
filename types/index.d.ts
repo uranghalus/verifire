@@ -1,5 +1,18 @@
 import { type LinkProps } from '@tanstack/react-router';
 
+// LINK data apar
+export type Apar = {
+  id: number;
+  kode_apar: string;
+  lantai?: string | null;
+  lokasi: string;
+  jenis: string;
+  size: number;
+  userId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+// LINK Data user
 export type User = {
   id?: string;
   createdAt?: Date;

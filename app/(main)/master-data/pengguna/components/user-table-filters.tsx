@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/select"
 import { useDialog } from "@/context/dialog-provider"
 import { getRoleIcon, roles } from "./user-table-utils"
+import { useEffect, useState } from "react"
+import { can } from "@/hooks/use-permission"
 
 
 interface UserTableFiltersProps {
@@ -45,10 +47,15 @@ export function UserTableFilters({
     isLoading
 }: UserTableFiltersProps) {
     const { setOpen } = useDialog()
-
+    const [canCreate, setCanCreate] = useState(false);
     const handleAddUser = () => {
         setOpen('add')
     }
+    useEffect(() => {
+        (async () => {
+            setCanCreate(await can("apar", "create"));
+        })();
+    }, []);
 
     return (
         <div className="flex flex-wrap gap-4 items-center justify-between my-6 rounded-md border p-3">
@@ -113,25 +120,29 @@ export function UserTableFilters({
                     <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
                 </Button>
             </div>
+            {/* Action buttons */}
+            {canCreate && (
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={onExport}
+                        className="flex items-center gap-2"
+                        disabled={isLoading}
+                    >
+                        <Download className="h-4 w-4" />
+                        Export
+                    </Button>
+                    <Button
+                        onClick={handleAddUser}
+                        className="flex items-center gap-2"
+                    >
+                        <UserPlus className="h-4 w-4" />
+                        Add User
+                    </Button>
+                </div>
 
-            <div className="flex gap-2">
-                <Button
-                    variant="outline"
-                    onClick={onExport}
-                    className="flex items-center gap-2"
-                    disabled={isLoading}
-                >
-                    <Download className="h-4 w-4" />
-                    Export
-                </Button>
-                <Button
-                    onClick={handleAddUser}
-                    className="flex items-center gap-2"
-                >
-                    <UserPlus className="h-4 w-4" />
-                    Add User
-                </Button>
-            </div>
+            )}
+
         </div>
     )
 }
