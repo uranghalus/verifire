@@ -55,6 +55,7 @@ export const admin = ac.newRole({
   user: [
     'list',
     'edit',
+    'create',
     'update',
     'delete',
     'set-role',

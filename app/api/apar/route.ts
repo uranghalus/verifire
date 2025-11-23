@@ -1,9 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { auth } from '@/lib/auth';
+import { getServerSession } from '@/lib/get-session';
 import prisma from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession();
+    const userId = session?.user?.id;
+    const hasPermission = await auth.api.userHasPermission({
+      body: {
+        userId: userId,
+        permission: {
+          apar: ['view'],
+        },
+      },
+    });
+
+    if (hasPermission.success === false) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get('page') ?? '1', 10);
     const pageSize = parseInt(url.searchParams.get('pageSize') ?? '10', 10);
@@ -47,6 +64,20 @@ export async function GET(req: NextRequest) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const session = await getServerSession();
+    const userId = session?.user?.id;
+    const hasPermission = await auth.api.userHasPermission({
+      body: {
+        userId: userId,
+        permission: {
+          apar: ['create'],
+        },
+      },
+    });
+
+    if (hasPermission.success === false) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
     // expected fields: kode_apar, lantai, lokasi, jenis, size, userId?
     const created = await prisma.apar.create({ data: body });
     return NextResponse.json(created, { status: 201 });

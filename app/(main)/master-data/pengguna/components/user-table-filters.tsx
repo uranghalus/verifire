@@ -53,7 +53,7 @@ export function UserTableFilters({
     }
     useEffect(() => {
         (async () => {
-            setCanCreate(await can("apar", "create"));
+            setCanCreate(await can("user", "create"));
         })();
     }, []);
 
