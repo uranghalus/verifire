@@ -1,20 +1,18 @@
-'use client'
+
 import { Main } from '@/components/main'
 import { DialogProvider } from '@/context/dialog-provider'
-import { fetcher } from '@/lib/utils'
 import { Metadata } from 'next'
-import React from 'react'
-import useSWR from 'swr'
+
 import AparTable from './components/apar-table'
-import { columns } from './components/apar-columns'
+import { AparDialogs } from './components/apar-dialogs'
 
 
-// export const metadata: Metadata = {
-//     title: 'Data Apar',
-//     description: 'Data Apar page',
-// }
+
+export const metadata: Metadata = {
+    title: 'Data Apar',
+    description: 'Data Apar page',
+}
 export default function AparPage() {
-    const { data, error, isLoading } = useSWR("/api/apar?limit=1000", fetcher);
     return (
         <DialogProvider>
             <Main fluid>
@@ -28,8 +26,8 @@ export default function AparPage() {
                     {/* <UsersPrimaryButtons /> */}
 
                 </div>
-                <AparTable columns={columns} data={data?.data ?? []} />
-                {/* <UserDialogs /> */}
+                <AparTable />
+                <AparDialogs />
             </Main>
         </DialogProvider>
     )

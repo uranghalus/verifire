@@ -1,107 +1,118 @@
 "use client";
 
-import {
-    ColumnDef,
-    ColumnFiltersState,
-    flexRender,
-    getCoreRowModel,
-    getFacetedRowModel,
-    getFacetedUniqueValues,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    RowData,
-    SortingState,
-    useReactTable,
-    VisibilityState,
-} from "@tanstack/react-table";
-import { useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Apar } from "@/types";
-import AparToolbar from "./apar-toolbar";
-import { DataTablePagination } from "@/components/datatable/data-table-pagination";
+import { useEffect, useState } from "react";
+import { AparTableToolbar } from "./apar-toolbar";
+import { useApar } from "../hooks/use-apar";
+import { useRouter, useSearchParams } from "next/navigation";
+import { aparColumns } from "./apar-columns";
+import { DataTable } from "@/components/datatable/data-table";
 
 
-declare module "@tanstack/react-table" {
-    interface ColumnMeta<TData extends RowData, TValue> {
-        className?: string;
+
+
+
+export default function AparTable() {
+    const searchParams = useSearchParams()
+    const router = useRouter()
+
+    const [page, setPage] = useState(1)
+    const [search, setSearch] = useState('')
+    const [lantai, setLantai] = useState('')
+    const [jenis, setJenis] = useState('')
+    const [size, setSize] = useState('')
+
+    // Sync URL params dengan state
+    useEffect(() => {
+        const pageParam = searchParams.get('page')
+        const searchParam = searchParams.get('search')
+        const lantaiParam = searchParams.get('lantai')
+        const jenisParam = searchParams.get('jenis')
+        const sizeParam = searchParams.get('size')
+
+        if (pageParam) setPage(parseInt(pageParam))
+        if (searchParam) setSearch(searchParam)
+        if (lantaiParam) setLantai(lantaiParam)
+        if (jenisParam) setJenis(jenisParam)
+        if (sizeParam) setSize(sizeParam)
+    }, [searchParams])
+
+    // Update URL ketika state berubah
+    const updateURL = (updates: Record<string, string | number>) => {
+        const params = new URLSearchParams(searchParams.toString())
+
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === '' || value === null || value === undefined) {
+                params.delete(key)
+            } else {
+                params.set(key, value.toString())
+            }
+        })
+
+        router.push(`/apar?${params.toString()}`, { scroll: false })
     }
-}
 
-interface Props {
-    columns: ColumnDef<Apar>[];
-    data: Apar[];
-}
+    const { data, pagination, isLoading, mutate } = useApar({
+        page,
+        limit: 10,
+        search,
+        lantai,
+        jenis,
+        size
+    })
 
-export default function AparTable({ columns, data }: Props) {
-    const [rowSelection, setRowSelection] = useState({});
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-    const [sorting, setSorting] = useState<SortingState>([]);
+    const handleSearchChange = (value: string) => {
+        setSearch(value)
+        setPage(1)
+        updateURL({ search: value, page: 1 })
+    }
 
-    const table = useReactTable({
-        data,
-        columns,
-        state: {
-            sorting,
-            columnVisibility,
-            rowSelection,
-            columnFilters,
-        },
-        enableRowSelection: true,
-        onRowSelectionChange: setRowSelection,
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
-        onColumnVisibilityChange: setColumnVisibility,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFacetedRowModel: getFacetedRowModel(),
-        getFacetedUniqueValues: getFacetedUniqueValues(),
-    });
+    const handleFilterChange = (filterType: string, value: string) => {
+        switch (filterType) {
+            case 'lantai':
+                setLantai(value)
+                setPage(1)
+                updateURL({ lantai: value, page: 1 })
+                break
+            case 'jenis':
+                setJenis(value)
+                setPage(1)
+                updateURL({ jenis: value, page: 1 })
+                break
+            case 'size':
+                setSize(value)
+                setPage(1)
+                updateURL({ size: value, page: 1 })
+                break
+            default:
+                break
+        }
+    }
+
+    const handleResetFilters = () => {
+        setSearch('')
+        setLantai('')
+        setJenis('')
+        setSize('')
+        setPage(1)
+        router.push('/apar', { scroll: false })
+    }
 
     return (
         <div className="space-y-4">
-            <AparToolbar table={table} />
-
+            <AparTableToolbar
+                searchValue={search}
+                onSearchChange={handleSearchChange}
+                onFilterChange={handleFilterChange}
+                onResetFilters={handleResetFilters}
+                currentFilters={{ lantai, jenis, size }}
+            />
             <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id} className="group/row">
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id} colSpan={header.colSpan} className={header.column.columnDef.meta?.className ?? ""}>
-                                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-
-                    <TableBody>
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className="group/row">
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} className={cell.column.columnDef.meta?.className ?? ""}>
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                <DataTable
+                    columns={aparColumns}
+                    data={data || []}
+                />
             </div>
 
-            <DataTablePagination table={table} />
         </div>
     );
 }
