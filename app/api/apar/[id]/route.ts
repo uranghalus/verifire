@@ -27,11 +27,12 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
     const body = await request.json();
-    const apar = await updateApar(parseInt(params.id), body);
+    const apar = await updateApar(parseInt(id), body);
     return NextResponse.json(apar);
   } catch (error) {
     console.error('Error updating APAR:', error);
@@ -44,16 +45,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
-    await deleteApar(parseInt(params.id));
-    return NextResponse.json({ message: 'APAR deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting APAR:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete APAR' },
-      { status: 500 }
-    );
-  }
+  const { id } = await context.params;
+
+  console.log('ID:', id);
+  await deleteApar(parseInt(id));
+
+  return NextResponse.json({ message: 'APAR deleted successfully' });
 }

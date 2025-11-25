@@ -1,108 +1,85 @@
-// app/apar/hooks/useApar.ts
-import useSWR from 'swr';
-import { Apar, AparFormData } from '../types/apar';
+// hooks/use-apar-data.ts
+import { useState, useEffect } from 'react';
+import { Apar } from '../types/apar';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
-interface UseAparProps {
+interface UseAparDataProps {
   page?: number;
-  limit?: number;
+  pageSize?: number;
   search?: string;
-  lantai?: string;
   jenis?: string;
-  size?: string;
 }
 
-export function useApar(params: UseAparProps = {}) {
-  const { page = 1, limit = 10, search, lantai, jenis, size } = params;
-
-  const searchParams = new URLSearchParams({
-    page: page.toString(),
-    limit: limit.toString(),
-    ...(search && { search }),
-    ...(lantai && { lantai }),
-    ...(jenis && { jenis }),
-    ...(size && { size }),
-  });
-
-  const { data, error, isLoading, mutate } = useSWR(
-    `/api/apar?${searchParams}`,
-    fetcher,
-    {
-      keepPreviousData: true,
-      revalidateOnFocus: false,
-    }
-  );
-
-  return {
-    data: data?.data,
-    pagination: data?.pagination,
-    isLoading,
-    isError: error,
-    mutate,
+interface AparResponse {
+  data: Apar[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
   };
 }
 
-export function useAparById(id: number) {
-  const { data, error, isLoading, mutate } = useSWR(
-    id ? `/api/apar/${id}` : null,
-    fetcher
-  );
+export function useAparData({
+  page = 1,
+  pageSize = 10,
+  search = '',
+  jenis = '',
+}: UseAparDataProps = {}) {
+  const [data, setData] = useState<Apar[]>([]);
+  const [pagination, setPagination] = useState({
+    page,
+    pageSize,
+    totalCount: 0,
+    totalPages: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+
+        const params = new URLSearchParams({
+          page: page.toString(),
+          pageSize: pageSize.toString(),
+          ...(search && { search }),
+          ...(jenis && { jenis }),
+        });
+
+        const response = await fetch(`/api/apar?${params}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch APAR data');
+        }
+
+        const result: AparResponse = await response.json();
+        setData(result.data);
+        setPagination(result.pagination);
+      } catch (err) {
+        setError(err as Error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [page, pageSize, search, jenis]);
 
   return {
-    data: data?.data,
+    data,
+    pagination,
     isLoading,
-    isError: error,
-    mutate,
+    error,
+    refetch: () => {
+      // Trigger refetch dengan current params
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        pageSize: pagination.pageSize.toString(),
+        ...(search && { search }),
+        ...(jenis && { jenis }),
+      });
+      return fetch(`/api/apar?${params}`);
+    },
   };
-}
-
-export async function createAparMutation(data: AparFormData) {
-  const response = await fetch('/api/apar', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to create APAR');
-  }
-
-  return response.json();
-}
-
-export async function updateAparMutation(
-  id: number,
-  data: Partial<AparFormData>
-) {
-  const response = await fetch(`/api/apar/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to update APAR');
-  }
-
-  return response.json();
-}
-
-export async function deleteAparMutation(id: number) {
-  const response = await fetch(`/api/apar/${id}`, {
-    method: 'DELETE',
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to delete APAR');
-  }
-
-  return response.json();
 }

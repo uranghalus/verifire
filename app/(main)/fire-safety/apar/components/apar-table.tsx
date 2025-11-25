@@ -1,17 +1,24 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// app/apar/components/apar-table.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { AparTableToolbar } from "./apar-toolbar";
 import { useApar } from "../hooks/use-apar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { aparColumns } from "./apar-columns";
 import { DataTable } from "@/components/datatable/data-table";
+import { AparToolbar } from "./apar-toolbar";
+
 
 
 
 
 
 export default function AparTable() {
+
+
+
+
     const searchParams = useSearchParams()
     const router = useRouter()
 
@@ -97,9 +104,34 @@ export default function AparTable() {
         router.push('/apar', { scroll: false })
     }
 
+    // Buat table instance untuk toolbar
+    const table = {
+        getState: () => ({
+            columnFilters: [
+                ...(lantai ? [{ id: 'lantai', value: lantai }] : []),
+                ...(jenis ? [{ id: 'jenis', value: jenis }] : []),
+                ...(size ? [{ id: 'size', value: size }] : [])
+            ]
+        }),
+        getColumn: (columnId: string) => ({
+            getFilterValue: () => {
+                switch (columnId) {
+                    case 'lantai': return lantai
+                    case 'jenis': return jenis
+                    case 'size': return size
+                    default: return ''
+                }
+            },
+            setFilterValue: (value: string) => handleFilterChange(columnId, value)
+        }),
+        resetColumnFilters: handleResetFilters
+    }
+
+
     return (
         <div className="space-y-4">
-            <AparTableToolbar
+            <AparToolbar
+                table={table as any}
                 searchValue={search}
                 onSearchChange={handleSearchChange}
                 onFilterChange={handleFilterChange}

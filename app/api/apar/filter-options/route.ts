@@ -1,21 +1,53 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+// app/api/apar/filter-options/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { JenisApar } from '@/generated/prisma';
 
-export async function GET() {
-  // Returns unique values for lantai, jenis, size and totalBatch calculation for QR printing
-  const [lantaiRows, jenisRows, sizeRows, count] = await Promise.all([
-    prisma.apar.findMany({ select: { lantai: true }, distinct: ['lantai'] }),
-    prisma.apar.findMany({ select: { jenis: true }, distinct: ['jenis'] }),
-    prisma.apar.findMany({ select: { size: true }, distinct: ['size'] }),
-    prisma.apar.count(),
-  ]);
+export async function GET(request: NextRequest) {
+  try {
+    // Ambil unique values dari database
+    const [jenisList, sizeList, lantaiList, totalApar] = await Promise.all([
+      // Jenis APAR
+      Object.values(JenisApar),
 
-  const lantai = lantaiRows.map((r) => r.lantai).filter(Boolean) as string[];
-  const jenis = jenisRows.map((r) => r.jenis) as string[];
-  const size = sizeRows.map((r) => String(r.size)) as string[];
+      // Size APAR (dalam kg)
+      prisma.apar
+        .findMany({
+          select: { size: true },
+          distinct: ['size'],
+          orderBy: { size: 'asc' },
+        })
+        .then((results) => results.map((item) => item.size.toString())),
 
-  const perBatch = 50; // example
-  const totalBatch = Math.max(1, Math.ceil(count / perBatch));
+      // Lantai
+      prisma.apar
+        .findMany({
+          where: { lantai: { not: null } },
+          select: { lantai: true },
+          distinct: ['lantai'],
+          orderBy: { lantai: 'asc' },
+        })
+        .then((results) => results.map((item) => item.lantai!).filter(Boolean)),
 
-  return NextResponse.json({ lantai, jenis, size, totalBatch });
+      // Total APAR untuk menghitung batch
+      prisma.apar.count(),
+    ]);
+
+    // Hitung total batch (misal: 50 APAR per batch)
+    const APAR_PER_BATCH = 50;
+    const totalBatch = Math.ceil(totalApar / APAR_PER_BATCH);
+
+    return NextResponse.json({
+      jenis: jenisList,
+      size: sizeList,
+      lantai: lantaiList,
+      totalBatch,
+    });
+  } catch (error) {
+    console.error('Error fetching filter options:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch filter options' },
+      { status: 500 }
+    );
+  }
 }

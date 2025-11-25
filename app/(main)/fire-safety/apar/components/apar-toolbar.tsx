@@ -1,43 +1,17 @@
-// app/apar/components/apar-table-toolbar.tsx (Recommended)
+// app/apar/components/apar-toolbar.tsx
 'use client'
 
-import { Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import { JenisApar } from '../types/apar'
-import { useDialog } from '@/context/dialog-provider'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table } from '@tanstack/react-table'
+import { Printer, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Apar } from '../types/apar'
+import { DataTableFacetedFilter } from '@/components/datatable/datatable-faceted-filter'
 
-// Gunakan value yang meaningful untuk "all"
-const ALL_JENIS_VALUE = 'ALL_JENIS'
-const ALL_SIZE_VALUE = 'ALL_SIZE'
-
-const jenisOptions = [
-    { label: 'Semua Jenis', value: ALL_JENIS_VALUE },
-    { label: 'Powder', value: JenisApar.POWDER },
-    { label: 'Foam', value: JenisApar.FOAM },
-    { label: 'CO2', value: JenisApar.CO2 },
-    { label: 'Wet Chemical', value: JenisApar.WET_CHEMICAL },
-]
-
-const sizeOptions = [
-    { label: 'Semua Size', value: ALL_SIZE_VALUE },
-    { label: '1 kg', value: '1' },
-    { label: '2 kg', value: '2' },
-    { label: '3 kg', value: '3' },
-    { label: '4 kg', value: '4' },
-    { label: '5 kg', value: '5' },
-    { label: '6 kg', value: '6' },
-    { label: '9 kg', value: '9' },
-]
-
-interface AparTableToolbarProps {
+interface AparToolbarProps<TData> {
+    table: Table<TData>
     searchValue: string
     onSearchChange: (value: string) => void
     onFilterChange: (filterType: string, value: string) => void
@@ -49,84 +23,92 @@ interface AparTableToolbarProps {
     }
 }
 
-export function AparTableToolbar({
+export function AparToolbar<TData>({
+    table,
     searchValue,
     onSearchChange,
     onFilterChange,
     onResetFilters,
     currentFilters
-}: AparTableToolbarProps) {
-    const isFiltered =
-        searchValue !== '' ||
-        currentFilters.lantai !== '' ||
-        currentFilters.jenis !== '' ||
-        currentFilters.size !== ''
+}: AparToolbarProps<TData>) {
+    const isFiltered = table.getState().columnFilters.length > 0
+    const [lantaiList, setLantaiList] = useState<string[]>([])
+    const [jenisList, setJenisList] = useState<string[]>([])
+    const [sizeList, setSizeList] = useState<string[]>([])
+    const [batchCount, setBatchCount] = useState(1)
+    const [selectedLantai, setSelectedLantai] = useState('')
+    const [selectedBatch, setSelectedBatch] = useState('1')
 
-    // Convert internal state ke external state
-    const handleJenisChange = (value: string) => {
-        onFilterChange('jenis', value === ALL_JENIS_VALUE ? '' : value)
+    // Ambil data filter options dari backend
+    useEffect(() => {
+        const fetchFilterOptions = async () => {
+            try {
+                const response = await fetch('/api/apar/filter-options')
+                if (response.ok) {
+                    const data = await response.json()
+                    setBatchCount(data.totalBatch ?? 1)
+                    setJenisList(data.jenis ?? [])
+                    setSizeList(data.size ?? [])
+                    setLantaiList(data.lantai ?? [])
+                }
+            } catch (error) {
+                console.error('Error fetching filter options:', error)
+            }
+        }
+
+        fetchFilterOptions()
+    }, [])
+
+    const handlePrint = () => {
+        const params = new URLSearchParams()
+        if (selectedLantai) params.append('lantai', selectedLantai)
+        params.append('batch', selectedBatch)
+
+        // Ganti dengan route Next.js Anda
+        window.open(`/api/apar/print-qrcode?${params.toString()}`, '_blank')
     }
 
-    const handleSizeChange = (value: string) => {
-        onFilterChange('size', value === ALL_SIZE_VALUE ? '' : value)
+    // Handler untuk faceted filter changes
+    const handleFacetedFilterChange = (columnId: string, value: string[]) => {
+        if (value.length > 0) {
+            onFilterChange(columnId, value[0]) // Ambil value pertama untuk single selection
+        } else {
+            onFilterChange(columnId, '') // Reset jika tidak ada selection
+        }
     }
 
-    // Convert external state ke internal state untuk display
-    const displayJenisValue = currentFilters.jenis === '' ? ALL_JENIS_VALUE : currentFilters.jenis
-    const displaySizeValue = currentFilters.size === '' ? ALL_SIZE_VALUE : currentFilters.size
-    const { setOpen } = useDialog()
     return (
         <div className="flex items-center justify-between">
-            <div className="flex flex-1 items-center space-x-2">
+            <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:space-x-2">
                 <Input
-                    placeholder="Cari kode APAR, lokasi, atau lantai..."
+                    placeholder="Cari APAR"
                     value={searchValue}
                     onChange={(event) => onSearchChange(event.target.value)}
-                    className="h-8 w-[250px] lg:w-[300px]"
+                    className="w-full sm:w-[250px] md:w-[300px] lg:w-[400px]"
                 />
-
-                {/* Filter Lantai */}
-                <Input
-                    placeholder="Filter lantai..."
-                    value={currentFilters.lantai}
-                    onChange={(event) => onFilterChange('lantai', event.target.value)}
-                    className="h-8 w-[130px]"
-                />
-
-                {/* Filter Jenis */}
-                <Select
-                    value={displayJenisValue}
-                    onValueChange={handleJenisChange}
-                >
-                    <SelectTrigger className="h-8 w-[130px]">
-                        <SelectValue placeholder="Jenis" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {jenisOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-
-                {/* Filter Size */}
-                <Select
-                    value={displaySizeValue}
-                    onValueChange={handleSizeChange}
-                >
-                    <SelectTrigger className="h-8 w-[130px]">
-                        <SelectValue placeholder="Size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {sizeOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-
+                <div className="flex gap-x-2">
+                    {table.getColumn('jenis') && (
+                        <DataTableFacetedFilter
+                            column={table.getColumn('jenis')}
+                            title="Jenis APAR"
+                            options={jenisList.map((item) => ({ label: item, value: item }))}
+                        />
+                    )}
+                    {table.getColumn('size') && (
+                        <DataTableFacetedFilter
+                            column={table.getColumn('size')}
+                            title="Ukuran APAR"
+                            options={sizeList.map((item) => ({ label: `${item} kg`, value: item }))}
+                        />
+                    )}
+                    {table.getColumn('lantai') && (
+                        <DataTableFacetedFilter
+                            column={table.getColumn('lantai')}
+                            title="Lantai"
+                            options={lantaiList.map((item) => ({ label: item, value: item }))}
+                        />
+                    )}
+                </div>
                 {isFiltered && (
                     <Button
                         variant="ghost"
@@ -138,13 +120,37 @@ export function AparTableToolbar({
                     </Button>
                 )}
             </div>
-            <div className="flex gap-2">
-                <Button
-                    onClick={() => setOpen('add')}
-                    className="flex items-center gap-2"
-                >
-                    <Plus className="h-4 w-4" />
-                    Tambah APAR
+
+            <div className="flex items-center space-x-2">
+                <Select value={selectedLantai} onValueChange={setSelectedLantai}>
+                    <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Pilih Lokasi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {lantaiList.map((lokasi, index) => (
+                            <SelectItem key={index} value={lokasi}>
+                                {lokasi}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                <Select value={selectedBatch} onValueChange={setSelectedBatch}>
+                    <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Batch ke-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {Array.from({ length: batchCount }, (_, i) => (
+                            <SelectItem key={i} value={`${i + 1}`}>
+                                Batch {i + 1}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+
+                <Button size="sm" className="h-8" variant="secondary" onClick={handlePrint}>
+                    <Printer className="mr-1 h-4 w-4" />
+                    Cetak QR Code
                 </Button>
             </div>
         </div>

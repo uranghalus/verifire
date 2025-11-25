@@ -31,8 +31,9 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { Apar, AparFormData, JenisApar } from '../types/apar'
+import { Apar, AparFormData } from '../types/apar'
 import { createAparMutation, updateAparMutation } from '../hooks/use-apar'
+import { JenisApar } from '@/generated/prisma'
 
 
 const formSchema = z.object({
@@ -69,7 +70,7 @@ export function AparActionDialog({
             kode_apar: '',
             lantai: '',
             lokasi: '',
-            jenis: JenisApar.POWDER,
+            jenis: JenisApar.Foam,
             size: 1,
         }
     })
@@ -90,7 +91,7 @@ export function AparActionDialog({
                     kode_apar: '',
                     lantai: '',
                     lokasi: '',
-                    jenis: JenisApar.POWDER,
+                    jenis: JenisApar.Foam,
                     size: 1,
                 })
             }
@@ -192,10 +193,10 @@ export function AparActionDialog({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value={JenisApar.POWDER}>Powder</SelectItem>
-                                                <SelectItem value={JenisApar.FOAM}>Foam</SelectItem>
+                                                <SelectItem value={JenisApar.Powder}>Powder</SelectItem>
+                                                <SelectItem value={JenisApar.Foam}>Foam</SelectItem>
                                                 <SelectItem value={JenisApar.CO2}>CO2</SelectItem>
-                                                <SelectItem value={JenisApar.WET_CHEMICAL}>Wet Chemical</SelectItem>
+                                                <SelectItem value={JenisApar.Air}>Air</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
