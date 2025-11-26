@@ -1,10 +1,9 @@
-// app/apar/components/apar-action-dialog.tsx
+// components/apar-action-dialog.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useForm, type Resolver } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -23,223 +22,217 @@ import {
     FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import { toast } from 'sonner'
-import { Apar, AparFormData } from '../types/apar'
-import { createAparMutation, updateAparMutation } from '../hooks/use-apar'
-import { JenisApar } from '@/generated/prisma'
+import { SelectDropdown } from '@/components/select-dropdown'
+import { jenisApar, sizes } from '../data/data'
+import { Apar, JenisApar } from '../types/apar'
 
 
 const formSchema = z.object({
     kode_apar: z.string().min(1, 'Kode APAR harus diisi'),
-    lantai: z.string().optional(),
     lokasi: z.string().min(1, 'Lokasi harus diisi'),
-    jenis: z.nativeEnum(JenisApar, {
-        error: 'Jenis harus dipilih'
-    }),
-    size: z.coerce.number().min(0.1, 'Size harus lebih dari 0'),
+    lantai: z.string().optional(),
+    jenis: z.nativeEnum(JenisApar),
+    size: z.string().min(1, 'Size harus dipilih'),
 })
 
-type FormValues = z.infer<typeof formSchema>
+type AparForm = z.infer<typeof formSchema>
 
-interface AparActionDialogProps {
+type AparActionDialogProps = {
+    currentRow?: Apar
     open: boolean
     onOpenChange: (open: boolean) => void
-    currentApar?: Apar | null
-    onSuccess?: () => void
 }
 
 export function AparActionDialog({
+    currentRow,
     open,
     onOpenChange,
-    currentApar,
-    onSuccess
 }: AparActionDialogProps) {
-    const [isLoading, setIsLoading] = useState(false)
-    const isEdit = !!currentApar
+    const isEdit = !!currentRow
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema) as Resolver<FormValues>,
-        defaultValues: {
-            kode_apar: '',
-            lantai: '',
-            lokasi: '',
-            jenis: JenisApar.Foam,
-            size: 1,
-        }
+    const form = useForm<AparForm>({
+        resolver: zodResolver(formSchema),
+        defaultValues: isEdit
+            ? {
+                kode_apar: currentRow.kode_apar,
+                lokasi: currentRow.lokasi,
+                lantai: currentRow.lantai || '',
+                jenis: currentRow.jenis,
+                size: currentRow.size.toString(),
+            }
+            : {
+                kode_apar: '',
+                lokasi: '',
+                lantai: '',
+                jenis: '' as JenisApar,
+                size: '',
+            },
     })
 
-    // Reset form ketika dialog dibuka/ditutup atau currentApar berubah
-    useEffect(() => {
-        if (open) {
-            if (isEdit && currentApar) {
-                form.reset({
-                    kode_apar: currentApar.kode_apar,
-                    lantai: currentApar.lantai || '',
-                    lokasi: currentApar.lokasi,
-                    jenis: currentApar.jenis,
-                    size: currentApar.size,
-                })
-            } else {
-                form.reset({
-                    kode_apar: '',
-                    lantai: '',
-                    lokasi: '',
-                    jenis: JenisApar.Foam,
-                    size: 1,
-                })
-            }
-        }
-    }, [open, isEdit, currentApar, form])
-
-    const onSubmit = async (values: FormValues) => {
-        setIsLoading(true)
+    const onSubmit = async (values: AparForm) => {
         try {
-            if (isEdit && currentApar) {
-                await updateAparMutation(currentApar.id, values)
-                toast.success('APAR berhasil diupdate')
+            const url = isEdit ? `/api/apar/${currentRow.id}` : '/api/apar'
+            const method = isEdit ? 'PUT' : 'POST'
+
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...values,
+                    size: parseFloat(values.size),
+                }),
+            })
+
+            if (response.ok) {
+                form.reset()
+                onOpenChange(false)
+
+                // Refresh data dengan window.location.reload() atau callback
+                if (typeof window !== 'undefined') {
+                    window.location.reload()
+                }
             } else {
-                await createAparMutation(values)
-                toast.success('APAR berhasil dibuat')
+                console.error('Failed to save APAR')
             }
-            onSuccess?.()
-            onOpenChange(false)
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Terjadi kesalahan')
-        } finally {
-            setIsLoading(false)
+            console.error('Error saving APAR:', error)
         }
     }
-
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
+        <Dialog
+            open={open}
+            onOpenChange={(state) => {
+                form.reset()
+                onOpenChange(state)
+            }}
+        >
+            <DialogContent className='sm:max-w-lg'>
+                <DialogHeader className='text-start'>
                     <DialogTitle>
-                        {isEdit ? 'Edit APAR' : 'Tambah APAR'}
+                        {isEdit ? 'Edit APAR' : 'Tambah APAR Baru'}
                     </DialogTitle>
                     <DialogDescription>
-                        {isEdit
-                            ? 'Update data APAR di sini.'
-                            : 'Tambahkan data APAR baru di sini.'
-                        }
+                        {isEdit ? 'Update data APAR' : 'Tambah data APAR baru'}.
+                        Klik simpan ketika selesai.
                     </DialogDescription>
                 </DialogHeader>
-
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="kode_apar"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Kode APAR</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="APAR-001" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="lokasi"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Lokasi</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Lobi Utama" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="lantai"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Lantai</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Lantai 1" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <div className="grid grid-cols-2 gap-4">
+                <div className='max-h-[80vh] overflow-y-auto py-1 pe-3'>
+                    <Form {...form}>
+                        <form
+                            id='apar-form'
+                            onSubmit={form.handleSubmit(onSubmit)}
+                            className='space-y-4 px-0.5'
+                        >
                             <FormField
                                 control={form.control}
-                                name="jenis"
+                                name='kode_apar'
                                 render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Jenis</FormLabel>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            value={field.value}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Pilih jenis" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value={JenisApar.Powder}>Powder</SelectItem>
-                                                <SelectItem value={JenisApar.Foam}>Foam</SelectItem>
-                                                <SelectItem value={JenisApar.CO2}>CO2</SelectItem>
-                                                <SelectItem value={JenisApar.Air}>Air</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="size"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Size (kg)</FormLabel>
+                                    <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                                        <FormLabel className='col-span-2 text-end'>
+                                            Kode APAR
+                                        </FormLabel>
                                         <FormControl>
                                             <Input
-                                                type="number"
-                                                step="0.1"
-                                                min="0.1"
-                                                placeholder="1"
+                                                placeholder='APAR-001'
+                                                className='col-span-4'
+                                                autoComplete='off'
                                                 {...field}
                                             />
                                         </FormControl>
-                                        <FormMessage />
+                                        <FormMessage className='col-span-4 col-start-3' />
                                     </FormItem>
                                 )}
                             />
-                        </div>
-
-                        <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                                disabled={isLoading}
-                            >
-                                Batal
-                            </Button>
-                            <Button type="submit" disabled={isLoading}>
-                                {isLoading ? 'Menyimpan...' : (isEdit ? 'Update' : 'Simpan')}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
+                            <FormField
+                                control={form.control}
+                                name='lokasi'
+                                render={({ field }) => (
+                                    <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                                        <FormLabel className='col-span-2 text-end'>
+                                            Lokasi
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder='Gedung A, Ruang Server'
+                                                className='col-span-4'
+                                                autoComplete='off'
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage className='col-span-4 col-start-3' />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name='lantai'
+                                render={({ field }) => (
+                                    <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                                        <FormLabel className='col-span-2 text-end'>
+                                            Lantai
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder='Lantai 1'
+                                                className='col-span-4'
+                                                autoComplete='off'
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage className='col-span-4 col-start-3' />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name='jenis'
+                                render={({ field }) => (
+                                    <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                                        <FormLabel className='col-span-2 text-end'>Jenis</FormLabel>
+                                        <SelectDropdown
+                                            defaultValue={field.value}
+                                            onValueChange={field.onChange}
+                                            placeholder='Pilih jenis APAR'
+                                            className='col-span-4'
+                                            items={jenisApar.map(({ label, value }) => ({
+                                                label,
+                                                value,
+                                            }))}
+                                        />
+                                        <FormMessage className='col-span-4 col-start-3' />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name='size'
+                                render={({ field }) => (
+                                    <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                                        <FormLabel className='col-span-2 text-end'>Size</FormLabel>
+                                        <SelectDropdown
+                                            defaultValue={field.value}
+                                            onValueChange={field.onChange}
+                                            placeholder='Pilih size'
+                                            className='col-span-4'
+                                            items={sizes.map(({ label, value }) => ({
+                                                label,
+                                                value,
+                                            }))}
+                                        />
+                                        <FormMessage className='col-span-4 col-start-3' />
+                                    </FormItem>
+                                )}
+                            />
+                        </form>
+                    </Form>
+                </div>
+                <DialogFooter>
+                    <Button type='submit' form='apar-form'>
+                        Simpan
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )

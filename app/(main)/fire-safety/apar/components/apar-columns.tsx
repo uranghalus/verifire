@@ -1,116 +1,134 @@
-import { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Apar } from "../types/apar";
-
-import { AparRowActions } from "./apar-row-action";
-import { JenisApar } from "@/generated/prisma";
-import { DataTableColumnHeader } from "@/components/datatable/datatable-column-header";
+import { type ColumnDef } from '@tanstack/react-table'
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 
 
-const jenisLabels: Record<JenisApar, string> = {
-    Powder: "Powder",
-    Foam: "Foam",
-    CO2: "CO2",
-    Air: "Air",
-};
 
-const jenisColors: Record<JenisApar, string> = {
-    Powder: "bg-blue-100 text-blue-800",
-    Foam: "bg-green-100 text-green-800",
-    CO2: "bg-gray-100 text-gray-800",
-    Air: "bg-orange-100 text-orange-800",
-};
+import { jenisApar } from '../data/data'
+
+import { DataTableColumnHeader } from '@/components/datatable/datatable-column-header'
+import { Apar } from '../types/apar'
+import { DataTableRowActions } from './apar-row-action'
 
 export const aparColumns: ColumnDef<Apar>[] = [
     {
-        id: "select",
+        id: 'select',
         header: ({ table }) => (
             <Checkbox
                 checked={
                     table.getIsAllPageRowsSelected() ||
-                    (table.getIsSomePageRowsSelected() && "indeterminate")
+                    (table.getIsSomePageRowsSelected() && 'indeterminate')
                 }
                 onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                aria-label="Select all"
+                aria-label='Select all'
+                className='translate-y-[2px]'
             />
         ),
+        meta: {
+            className: cn('max-md:sticky start-0 z-10 rounded-tl-[inherit]'),
+        },
         cell: ({ row }) => (
             <Checkbox
                 checked={row.getIsSelected()}
                 onCheckedChange={(value) => row.toggleSelected(!!value)}
-                aria-label="Select row"
+                aria-label='Select row'
+                className='translate-y-[2px]'
             />
         ),
         enableSorting: false,
         enableHiding: false,
     },
     {
-        accessorKey: "kode_apar",
+        accessorKey: 'kode_apar',
         header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Kode APAR" />
+            <DataTableColumnHeader column={column} title='Kode APAR' />
         ),
-        cell: ({ row }) => <div className="font-medium">{row.getValue('kode_apar')}</div>,
+        cell: ({ row }) => (
+            <div className='font-medium ps-3'>{row.getValue('kode_apar')}</div>
+        ),
+        meta: {
+            className: cn(
+                'drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.1)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.1)]',
+                'ps-0.5 max-md:sticky start-6 @4xl/content:table-cell @4xl/content:drop-shadow-none'
+            ),
+        },
+        enableHiding: false,
     },
     {
-        accessorKey: "lokasi",
+        accessorKey: 'lokasi',
         header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Lokasi" />
+            <DataTableColumnHeader column={column} title='Lokasi' />
         ),
-        cell: ({ row }) => <div>{row.getValue('lokasi')}</div>,
+        cell: ({ row }) => (
+            <div className='max-w-48 truncate'>{row.getValue('lokasi')}</div>
+        ),
     },
     {
-        accessorKey: "lantai",
+        accessorKey: 'lantai',
         header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Lantai" />
-        ),
-        cell: ({ row }) => <div>{row.getValue('lantai') || '-'}</div>,
-    },
-    {
-        accessorKey: "jenis",
-        header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Jenis" />
+            <DataTableColumnHeader column={column} title='Lantai' />
         ),
         cell: ({ row }) => {
-            const jenis = row.getValue('jenis') as JenisApar;
-            return (
-                <Badge variant="secondary" className={jenisColors[jenis]}>
-                    {jenisLabels[jenis]}
-                </Badge>
-            );
+            const lantai = row.getValue('lantai') as string
+            return <div>{lantai || '-'}</div>
         },
-        // NOTE: server-side filtering will be used; keep filterFn simple or remove
     },
     {
-        accessorKey: "size",
+        accessorKey: 'jenis',
         header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Size (kg)" />
+            <DataTableColumnHeader column={column} title='Jenis' />
         ),
-        cell: ({ row }) => <div className="text-right">{row.getValue('size')} kg</div>,
+        cell: ({ row }) => {
+            const jenis = row.getValue('jenis') as string
+            const aparType = jenisApar.find(({ value }) => value === jenis)
+
+            return (
+                <div className='flex items-center gap-x-2'>
+                    {aparType?.icon && (
+                        <aparType.icon size={16} className='text-muted-foreground' />
+                    )}
+                    <span className='text-sm capitalize'>{aparType?.label}</span>
+                </div>
+            )
+        },
+        filterFn: (row, id, value) => {
+            return value.includes(row.getValue(id))
+        },
+    },
+    {
+        accessorKey: 'size',
+        header: ({ column }) => (
+            <DataTableColumnHeader column={column} title='Size' />
+        ),
+        cell: ({ row }) => {
+            const size = row.getValue('size') as number
+            return <div>{size} kg</div>
+        },
     },
     {
         accessorKey: 'user',
         header: ({ column }) => (
-            <DataTableColumnHeader column={column} title='PIC' />
+            <DataTableColumnHeader column={column} title='Penanggung Jawab' />
         ),
         cell: ({ row }) => {
-            const user = row.original.user;
-            return (
-                <div>
-                    {user ? (
-                        <div>
-                            <div className='font-medium'>{user.name}</div>
-                            <div className='text-sm text-muted-foreground'>{user.email}</div>
-                        </div>
-                    ) : (
-                        <span className='text-muted-foreground'>-</span>
-                    )}
-                </div>
-            )
-        }
+            const user = row.original.user
+            return <div>{user?.name || '-'}</div>
+
+        },
+    },
+    {
+        accessorKey: 'createdAt',
+        header: ({ column }) => (
+            <DataTableColumnHeader column={column} title='Dibuat' />
+        ),
+        cell: ({ row }) => {
+            const date = new Date(row.getValue('createdAt'))
+            return <div>{date.toLocaleDateString('id-ID')}</div>
+        },
     },
     {
         id: 'actions',
-        cell: ({ row }) => <AparRowActions row={row} />,
-    }
-];
+        cell: DataTableRowActions,
+    },
+]

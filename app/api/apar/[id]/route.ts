@@ -1,23 +1,31 @@
-// app/api/apar/[id]/route.ts
-import {
-  deleteApar,
-  getAparById,
-  updateApar,
-} from '@/app/(main)/fire-safety/apar/data/action';
+import prisma from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const apar = await getAparById(parseInt(params.id));
+    const { id } = await context.params;
+    const apar = await prisma.apar.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
     if (!apar) {
       return NextResponse.json({ error: 'APAR not found' }, { status: 404 });
     }
+
     return NextResponse.json(apar);
   } catch (error) {
-    console.error('Error fetching APAR:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -32,7 +40,27 @@ export async function PUT(
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const apar = await updateApar(parseInt(id), body);
+    const apar = await prisma.apar.update({
+      where: { id: parseInt(id) },
+      data: {
+        kode_apar: body.kode_apar,
+        lantai: body.lantai,
+        lokasi: body.lokasi,
+        jenis: body.jenis,
+        size: body.size,
+        userId: body.userId || null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
     return NextResponse.json(apar);
   } catch (error) {
     console.error('Error updating APAR:', error);
@@ -49,8 +77,9 @@ export async function DELETE(
 ) {
   const { id } = await context.params;
 
-  console.log('ID:', id);
-  await deleteApar(parseInt(id));
+  await prisma.apar.delete({
+    where: { id: parseInt(id) },
+  });
 
   return NextResponse.json({ message: 'APAR deleted successfully' });
 }

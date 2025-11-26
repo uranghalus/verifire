@@ -1,150 +1,182 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// app/apar/components/apar-table.tsx
-"use client";
+// components/apar-table.tsx
+'use client'
 
-import { useEffect, useState } from "react";
-import { useApar } from "../hooks/use-apar";
-import { useRouter, useSearchParams } from "next/navigation";
-import { aparColumns } from "./apar-columns";
-import { DataTable } from "@/components/datatable/data-table";
-import { AparToolbar } from "./apar-toolbar";
+import { useState } from 'react'
+import {
+    type SortingState,
+    type VisibilityState,
+    flexRender,
+    getCoreRowModel,
+    getFacetedRowModel,
+    getFacetedUniqueValues,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    useReactTable,
+} from '@tanstack/react-table'
+import { cn } from '@/lib/utils'
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table'
 
+import { DataTableBulkActions } from './data-table-bulk-actions'
+import { aparColumns as columns } from './apar-columns'
+import { jenisApar, sizes } from '../data/data'
+import { Apar } from '../types/apar'
+import { DataTableToolbar } from '@/components/datatable/datatable-toolbar'
+import { DataTablePagination } from '@/components/datatable/data-table-pagination'
 
+interface AparTableProps {
+    data: Apar[]
+    searchParams: Record<string, unknown>
+    onRefresh?: () => void
+    loading?: boolean
+}
 
+export function AparTable({
+    data,
+    searchParams,
+    onRefresh,
+    loading = false
+}: AparTableProps) {
+    const [rowSelection, setRowSelection] = useState({})
+    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+    const [sorting, setSorting] = useState<SortingState>([])
 
-
-
-export default function AparTable() {
-
-
-
-
-    const searchParams = useSearchParams()
-    const router = useRouter()
-
-    const [page, setPage] = useState(1)
-    const [search, setSearch] = useState('')
-    const [lantai, setLantai] = useState('')
-    const [jenis, setJenis] = useState('')
-    const [size, setSize] = useState('')
-
-    // Sync URL params dengan state
-    useEffect(() => {
-        const pageParam = searchParams.get('page')
-        const searchParam = searchParams.get('search')
-        const lantaiParam = searchParams.get('lantai')
-        const jenisParam = searchParams.get('jenis')
-        const sizeParam = searchParams.get('size')
-
-        if (pageParam) setPage(parseInt(pageParam))
-        if (searchParam) setSearch(searchParam)
-        if (lantaiParam) setLantai(lantaiParam)
-        if (jenisParam) setJenis(jenisParam)
-        if (sizeParam) setSize(sizeParam)
-    }, [searchParams])
-
-    // Update URL ketika state berubah
-    const updateURL = (updates: Record<string, string | number>) => {
-        const params = new URLSearchParams(searchParams.toString())
-
-        Object.entries(updates).forEach(([key, value]) => {
-            if (value === '' || value === null || value === undefined) {
-                params.delete(key)
-            } else {
-                params.set(key, value.toString())
-            }
-        })
-
-        router.push(`/apar?${params.toString()}`, { scroll: false })
-    }
-
-    const { data, pagination, isLoading, mutate } = useApar({
-        page,
-        limit: 10,
-        search,
-        lantai,
-        jenis,
-        size
+    const table = useReactTable({
+        data,
+        columns,
+        state: {
+            sorting,
+            pagination: {
+                pageIndex: (searchParams.page as number) || 0,
+                pageSize: (searchParams.limit as number) || 10,
+            },
+            rowSelection,
+            columnVisibility,
+        },
+        enableRowSelection: true,
+        onRowSelectionChange: setRowSelection,
+        onSortingChange: setSorting,
+        onColumnVisibilityChange: setColumnVisibility,
+        getPaginationRowModel: getPaginationRowModel(),
+        getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getFacetedRowModel: getFacetedRowModel(),
+        getFacetedUniqueValues: getFacetedUniqueValues(),
     })
 
-    const handleSearchChange = (value: string) => {
-        setSearch(value)
-        setPage(1)
-        updateURL({ search: value, page: 1 })
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="mt-2 text-sm text-muted-foreground">Memuat data...</p>
+                </div>
+            </div>
+        )
     }
-
-    const handleFilterChange = (filterType: string, value: string) => {
-        switch (filterType) {
-            case 'lantai':
-                setLantai(value)
-                setPage(1)
-                updateURL({ lantai: value, page: 1 })
-                break
-            case 'jenis':
-                setJenis(value)
-                setPage(1)
-                updateURL({ jenis: value, page: 1 })
-                break
-            case 'size':
-                setSize(value)
-                setPage(1)
-                updateURL({ size: value, page: 1 })
-                break
-            default:
-                break
-        }
-    }
-
-    const handleResetFilters = () => {
-        setSearch('')
-        setLantai('')
-        setJenis('')
-        setSize('')
-        setPage(1)
-        router.push('/apar', { scroll: false })
-    }
-
-    // Buat table instance untuk toolbar
-    const table = {
-        getState: () => ({
-            columnFilters: [
-                ...(lantai ? [{ id: 'lantai', value: lantai }] : []),
-                ...(jenis ? [{ id: 'jenis', value: jenis }] : []),
-                ...(size ? [{ id: 'size', value: size }] : [])
-            ]
-        }),
-        getColumn: (columnId: string) => ({
-            getFilterValue: () => {
-                switch (columnId) {
-                    case 'lantai': return lantai
-                    case 'jenis': return jenis
-                    case 'size': return size
-                    default: return ''
-                }
-            },
-            setFilterValue: (value: string) => handleFilterChange(columnId, value)
-        }),
-        resetColumnFilters: handleResetFilters
-    }
-
 
     return (
-        <div className="space-y-4">
-            <AparToolbar
-                table={table as any}
-                searchValue={search}
-                onSearchChange={handleSearchChange}
-                onFilterChange={handleFilterChange}
-                onResetFilters={handleResetFilters}
-                currentFilters={{ lantai, jenis, size }}
+        <div className={cn('flex flex-1 flex-col gap-4')}>
+            <DataTableToolbar
+                table={table}
+                searchPlaceholder='Cari kode, lokasi, lantai...'
+                searchKey='kode_apar'
+                filters={[
+                    {
+                        columnId: 'jenis',
+                        title: 'Jenis',
+                        options: jenisApar.map((jenis) => ({ ...jenis })),
+                    },
+                    {
+                        columnId: 'size',
+                        title: 'Size',
+                        options: sizes.map((size) => ({ ...size })),
+                    },
+                ]}
             />
-            <div className="rounded-md border">
-                <DataTable
-                    columns={aparColumns}
-                    data={data || []}
-                />
+
+            <div className='overflow-hidden rounded-md border'>
+                <Table>
+                    <TableHeader>
+                        {table.getHeaderGroups().map((headerGroup) => (
+                            <TableRow key={headerGroup.id} className='group/row'>
+                                {headerGroup.headers.map((header) => {
+                                    const meta = header.column.columnDef.meta as any
+                                    return (
+                                        <TableHead
+                                            key={header.id}
+                                            colSpan={header.colSpan}
+                                            className={cn(
+                                                'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
+                                                meta?.className,
+                                                meta?.thClassName
+                                            )}
+                                        >
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                    header.column.columnDef.header,
+                                                    header.getContext()
+                                                )}
+                                        </TableHead>
+                                    )
+                                })}
+                            </TableRow>
+                        ))}
+                    </TableHeader>
+                    <TableBody>
+                        {table.getRowModel().rows?.length ? (
+                            table.getRowModel().rows.map((row) => (
+                                <TableRow
+                                    key={row.id}
+                                    data-state={row.getIsSelected() && 'selected'}
+                                    className='group/row'
+                                >
+                                    {row.getVisibleCells().map((cell) => {
+                                        const meta = cell.column.columnDef.meta as any
+                                        return (
+                                            <TableCell
+                                                key={cell.id}
+                                                className={cn(
+                                                    'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
+                                                    meta?.className,
+                                                    meta?.tdClassName
+                                                )}
+                                            >
+                                                {flexRender(
+                                                    cell.column.columnDef.cell,
+                                                    cell.getContext()
+                                                )}
+                                            </TableCell>
+                                        )
+                                    })}
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell
+                                    colSpan={columns.length}
+                                    className='h-24 text-center'
+                                >
+                                    Tidak ada data.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
             </div>
 
+            <DataTablePagination table={table} className='mt-auto' />
+            <DataTableBulkActions table={table} />
         </div>
-    );
+    )
 }

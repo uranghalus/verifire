@@ -1,61 +1,61 @@
-// app/apar/components/apar-dialogs.tsx (Alternatif)
-'use client'
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// components/apar-dialogs.tsx
+import { useDialog } from '@/context/dialog-provider'
 import { AparActionDialog } from './apar-action-dialog'
 import { AparDeleteDialog } from './apar-delete-dialog'
-import { useDialog } from '@/context/dialog-provider'
-import { Apar } from '../types/apar'
-import { useApar } from '../hooks/use-apar'
-import { useSearchParams } from 'next/navigation'
+
 
 export function AparDialogs() {
-    const { open, setOpen, currentRow, setCurrentRow } = useDialog<Apar>()
-    const searchParams = useSearchParams()
-    const { mutate } = useApar({
-        page: parseInt(searchParams.get('page') || '1'),
-        limit: 10,
-        search: searchParams.get('search') || '',
-        lantai: searchParams.get('lantai') || '',
-        jenis: searchParams.get('jenis') || '',
-        size: searchParams.get('size') || '',
-    })
+    const { open, setOpen, currentRow, setCurrentRow } = useDialog()
 
-    const handleSuccess = () => {
-        // Trigger revalidation untuk data APAR
-        mutate()
-        setCurrentRow(null)
-    }
-
-    const handleOpenChange = (isOpen: boolean, dialogType: 'add' | 'edit' | 'delete' | null) => {
-        if (!isOpen) {
-            setOpen(null)
-            setTimeout(() => setCurrentRow(null), 300)
-        } else {
-            setOpen(dialogType)
-        }
+    const handleClose = (type: 'edit' | 'delete' | 'view' | 'inspections') => {
+        setOpen(null)
+        setTimeout(() => {
+            setCurrentRow(null)
+        }, 500)
     }
 
     return (
         <>
+            {/* Add Dialog */}
             <AparActionDialog
+                key='apar-add'
                 open={open === 'add'}
-                onOpenChange={(isOpen) => handleOpenChange(isOpen, isOpen ? 'add' : null)}
-                onSuccess={handleSuccess}
+                onOpenChange={() => setOpen('add')}
             />
 
-            <AparActionDialog
-                open={open === 'edit'}
-                onOpenChange={(isOpen) => handleOpenChange(isOpen, isOpen ? 'edit' : null)}
-                currentApar={currentRow}
-                onSuccess={handleSuccess}
-            />
+            {/* Edit, View, and Inspections Dialogs */}
+            {currentRow && (
+                <>
+                    <AparActionDialog
+                        key={`apar-edit-${currentRow.id}`}
+                        open={open === 'edit'}
+                        onOpenChange={() => handleClose('edit')}
+                        currentRow={currentRow as any}
+                    />
+                    {/* 
+                    <AparDetailDialog
+                        key={`apar-view-${currentRow.id}`}
+                        open={open === 'view'}
+                        onOpenChange={() => handleClose('view')}
+                        currentRow={currentRow}
+                    />
 
-            <AparDeleteDialog
-                open={open === 'delete'}
-                onOpenChange={(isOpen) => handleOpenChange(isOpen, isOpen ? 'delete' : null)}
-                currentApar={currentRow}
-                onSuccess={handleSuccess}
-            />
+                    <AparInspectionsDialog
+                        key={`apar-inspections-${currentRow.id}`}
+                        open={open === 'inspections'}
+                        onOpenChange={() => handleClose('inspections')}
+                        currentRow={currentRow}
+                    /> */}
+
+                    <AparDeleteDialog
+                        key={`apar-delete-${currentRow.id}`}
+                        open={open === 'delete'}
+                        onOpenChange={() => handleClose('delete')}
+                        currentRow={currentRow as any}
+                    />
+                </>
+            )}
         </>
     )
 }

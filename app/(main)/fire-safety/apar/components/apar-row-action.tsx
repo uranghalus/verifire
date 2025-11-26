@@ -1,45 +1,49 @@
-// app/apar/components/apar-row-actions.tsx
-import { Row } from '@tanstack/react-table'
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react'
+// components/data-table-row-actions.tsx
+
+import { type Row } from '@tanstack/react-table'
+import { Ellipsis, Trash2, UserPen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
+    DropdownMenuShortcut,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Apar } from '../types/apar'
 import { useDialog } from '@/context/dialog-provider'
 
 
-interface AparRowActionsProps {
+interface DataTableRowActionsProps {
     row: Row<Apar>
 }
 
-export function AparRowActions({ row }: AparRowActionsProps) {
-    const { setOpen, setCurrentRow } = useDialog<Apar>()
+export function DataTableRowActions({ row }: DataTableRowActionsProps) {
+    const { setOpen, setCurrentRow } = useDialog()
 
     return (
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
                 <Button
-                    variant="ghost"
-                    className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+                    variant='ghost'
+                    className='data-[state=open]:bg-muted flex h-8 w-8 p-0'
                 >
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Open menu</span>
+                    <Ellipsis className='h-4 w-4' />
+                    <span className='sr-only'>Open menu</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[160px]">
+            <DropdownMenuContent align='end' className='w-[160px]'>
                 <DropdownMenuItem
                     onClick={() => {
                         setCurrentRow(row.original)
                         setOpen('edit')
                     }}
                 >
-                    <Edit className="mr-2 h-4 w-4" />
                     Edit
+                    <DropdownMenuShortcut>
+                        <UserPen size={16} />
+                    </DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -47,10 +51,12 @@ export function AparRowActions({ row }: AparRowActionsProps) {
                         setCurrentRow(row.original)
                         setOpen('delete')
                     }}
-                    className="text-red-600 focus:text-red-600"
+                    className='text-red-500!'
                 >
-                    <Trash2 className="mr-2 h-4 w-4" />
                     Delete
+                    <DropdownMenuShortcut>
+                        <Trash2 size={16} />
+                    </DropdownMenuShortcut>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

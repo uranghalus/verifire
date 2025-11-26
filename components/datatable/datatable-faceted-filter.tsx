@@ -2,7 +2,7 @@
 'use client'
 
 import * as React from "react"
-import { CheckIcon, PlusCircledIcon } from "@radix-ui/react-icons"
+
 import { Column } from "@tanstack/react-table"
 
 import { cn } from "@/lib/utils"
@@ -23,6 +23,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
+import { CheckIcon, PlusCircleIcon } from "lucide-react"
 
 interface DataTableFacetedFilterProps<TData, TValue> {
     column?: Column<TData, TValue>
@@ -46,7 +47,7 @@ export function DataTableFacetedFilter<TData, TValue>({
         <Popover>
             <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 border-dashed">
-                    <PlusCircledIcon className="mr-2 h-4 w-4" />
+                    <PlusCircleIcon className="mr-2 h-4 w-4" />
                     {title}
                     {selectedValues?.size > 0 && (
                         <>

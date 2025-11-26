@@ -13,10 +13,10 @@ export type Apar = {
 };
 
 export enum JenisApar {
-  Powder = 'powder',
-  Foam = 'foam',
-  CO2 = 'co2',
-  Water = 'water',
+  Powder = 'Powder',
+  Foam = 'Foam',
+  CO2 = 'CO2',
+  Water = 'Water',
 }
 
 export type User = {
