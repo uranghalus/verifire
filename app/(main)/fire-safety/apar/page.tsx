@@ -33,15 +33,6 @@ export default async function AparPage() {
     const { data } = await getAparData()
     return (
         <Main fluid>
-            <div className='flex flex-wrap items-end justify-between gap-2'>
-                <div>
-                    <h2 className='text-2xl font-bold tracking-tight'>Daftar Apar</h2>
-                    <p className='text-muted-foreground'>
-                        Manage your fire safety equipment here.
-                    </p>
-                </div>
-                {/* <UsersPrimaryButtons /> */}
-            </div>
             <AparClient initialData={data} />
         </Main>
 

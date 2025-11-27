@@ -4,6 +4,7 @@ import { Apar } from '../types/apar'
 import { DialogProvider } from '@/context/dialog-provider'
 import { AparTable } from './apar-table'
 import { AparDialogs } from './apar-dialogs'
+import { AparPrimaryButtons } from './apar-primary-buttons'
 interface AparClientProps {
     initialData: Apar[]
 }
@@ -36,7 +37,7 @@ export default function AparClient({ initialData }: AparClientProps) {
                             Kelola data Alat Pemadam Api Ringan (APAR) di sini.
                         </p>
                     </div>
-                    {/* <AparPrimaryButtons /> */}
+                    <AparPrimaryButtons />
                 </div>
                 <AparTable data={data}
                     searchParams={searchParams}
