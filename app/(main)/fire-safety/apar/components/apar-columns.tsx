@@ -1,3 +1,4 @@
+
 import { type ColumnDef } from '@tanstack/react-table'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -102,8 +103,10 @@ export const aparColumns: ColumnDef<Apar>[] = [
             <DataTableColumnHeader column={column} title='Size' />
         ),
         cell: ({ row }) => {
-            const size = row.getValue('size') as number
-            return <div>{size} kg</div>
+            const size = row.original.size
+            console.log('Size', size);
+
+            return <div>{typeof size === 'number' ? size.toFixed(1) : size} kg</div>;
         },
     },
     {
