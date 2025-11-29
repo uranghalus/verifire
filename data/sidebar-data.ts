@@ -5,6 +5,7 @@ import {
   FireExtinguisher,
   DatabaseZap,
   UserCog2,
+  AppWindowMac,
 } from 'lucide-react';
 // import { ClerkLogo } from '@/assets/clerk-logo';
 import { SidebarData } from '@/types';
@@ -32,12 +33,12 @@ export const sidebarData: SidebarData = {
           icon: LayoutDashboard,
         },
         {
-          title: 'Role Management',
-          icon: UserCog2,
+          title: 'App Management',
+          icon: AppWindowMac,
           items: [
             {
-              title: 'Permission List',
-              url: '/role-management/permission-list',
+              title: 'Organization List',
+              url: '/organizations',
             },
             {
               title: 'Role List',
