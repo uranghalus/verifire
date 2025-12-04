@@ -1,10 +1,11 @@
 'use client'
 import { useState } from 'react'
-import { Organization } from '../types/organization'
+
 import { DialogProvider } from '@/context/dialog-provider'
 import OrganizationPrimaryButton from './organization-primary-button'
 import { OrganizationTable } from './organization-table'
 import { OrganizationDialogs } from './organization-dialogs'
+import { Organization } from '@/generated/prisma'
 
 interface OrganizationClientProps {
     initialData: Organization[]

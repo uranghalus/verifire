@@ -10,10 +10,11 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Organization } from '../types/organization'
+
 
 import { DataTableBulkActionToolbar } from '@/components/datatable/data-table-bulk-actions-toolbar'
 import { OrganizationMultiDeleteDialog } from './organization-multi-delete-dialog'
+import { Organization } from '@/generated/prisma'
 
 type DataTableBulkActionsProps<TData> = {
     table: Table<TData>

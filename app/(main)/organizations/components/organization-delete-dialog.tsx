@@ -8,7 +8,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { Organization } from '../types/organization'
+import { Organization } from '@/generated/prisma'
+import { authClient } from '@/lib/auth-client'
+
 
 type OrganizationDeleteDialogProps = {
     open: boolean
@@ -25,20 +27,16 @@ export function OrganizationDeleteDialog({
 
     const handleDelete = async () => {
         if (value.trim() !== currentRow.name) return
+        console.log('Deleting organization:', currentRow);
 
         try {
-            const response = await fetch(`/api/organizations/${currentRow.id}`, {
-                method: 'DELETE',
+            const { data, error } = await authClient.organization.delete({
+                organizationId: currentRow.id
             })
-
-            if (response.ok) {
-                onOpenChange(false)
-                setValue('')
-                // Refresh data
-                window.location.reload()
-            } else {
-                console.error('Failed to delete organization')
+            if (error) {
+                console.error('error deleting organization:', error)
             }
+            return data
         } catch (error) {
             console.error('Error deleting organization:', error)
         }

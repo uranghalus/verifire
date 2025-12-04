@@ -22,7 +22,8 @@ import {
     FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Organization } from '../types/organization'
+import { Organization } from '@/generated/prisma'
+
 
 const formSchema = z.object({
     name: z.string().min(1, 'Nama organisasi harus diisi'),

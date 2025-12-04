@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react'
 
-import { DialogProvider } from '@/context/dialog-provider'
+
 import { Main } from '@/components/main'
-import OrganizationPrimaryButton from './components/organization-primary-button'
 import { Metadata } from 'next'
 import OrganizationClient from './components/organization-client'
+import { auth } from '@/lib/auth'
+import { headers } from 'next/headers'
 
 export const metadata: Metadata = {
   title: 'Data Organisasi',
@@ -12,22 +14,34 @@ export const metadata: Metadata = {
 }
 async function getOrganizationData() {
   try {
-    const res = await fetch(`api/organizations`, {
-      cache: 'no-store',
+    const res = await auth.api.listOrganizations({
+      headers: await headers()
     })
-
-    if (!res.ok) {
+    if (!res) {
       throw new Error('Failed to fetch organization data')
     }
 
-    return res.json()
+    // Normalize response to always return an array of organizations
+    const orgs = Array.isArray(res) ? res : (res as any).data ?? []
+
+    // Ensure logo and metadata are never undefined (use null instead)
+    return (orgs as any[]).map((o) => ({
+      id: o.id,
+      name: o.name,
+      slug: o.slug,
+      createdAt: o.createdAt,
+      logo: o.logo ?? null,
+      metadata: o.metadata ?? null,
+    }))
   } catch (error) {
     console.error('Error fetching organization data:', error)
-    return { data: [] }
+    return []
   }
 }
 export default async function page() {
-  const { data } = await getOrganizationData()
+  const data = await getOrganizationData()
+  console.log('Fetched Data', data);
+
   return (
     <Main fluid>
       <OrganizationClient initialData={data} />

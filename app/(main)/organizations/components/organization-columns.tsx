@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 
 import { DataTableColumnHeader } from '@/components/datatable/datatable-column-header'
-import { Organization } from '../types/organization'
+
 import { DataTableRowActions } from './datatable-row-action'
+import { Organization } from '@/generated/prisma'
 
 
 export const organizationColumns: ColumnDef<Organization>[] = [
@@ -60,16 +61,6 @@ export const organizationColumns: ColumnDef<Organization>[] = [
         cell: ({ row }) => (
             <div className='max-w-48 truncate'>{row.getValue('slug')}</div>
         ),
-    },
-    {
-        accessorKey: 'memberCount',
-        header: ({ column }) => (
-            <DataTableColumnHeader column={column} title='Jumlah Anggota' />
-        ),
-        cell: ({ row }) => {
-            const memberCount = row.original.memberCount || 0
-            return <Badge variant="outline">{memberCount} anggota</Badge>
-        },
     },
     {
         accessorKey: 'createdAt',

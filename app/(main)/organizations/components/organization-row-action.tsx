@@ -10,8 +10,9 @@ import {
     DropdownMenuShortcut,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Organization } from '../types/organization'
+
 import { useDialog } from '@/context/dialog-provider'
+import { Organization } from '@/generated/prisma'
 
 interface OrganizationRowActionsProps {
     row: Row<Organization>

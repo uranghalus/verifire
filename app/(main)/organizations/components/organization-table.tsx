@@ -27,10 +27,11 @@ import {
 
 
 import { organizationColumns as columns } from './organization-columns'
-import { Organization } from '../types/organization'
+
 import { DataTableToolbar } from '@/components/datatable/datatable-toolbar'
 import { DataTablePagination } from '@/components/datatable/data-table-pagination'
 import { DataTableBulkActions } from './datatable-bulk-action'
+import { Organization } from '@/generated/prisma'
 
 interface OrganizationTableProps {
     data: Organization[]
