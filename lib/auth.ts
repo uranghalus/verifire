@@ -13,6 +13,10 @@ export const auth = betterAuth({
     autoSignIn: false,
   },
   user: {
+    changeEmail: {
+      enabled: true,
+      updateEmailWithoutVerification: true,
+    },
     additionalFields: {
       role: {
         type: 'string',
