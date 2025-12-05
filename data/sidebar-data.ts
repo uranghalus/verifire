@@ -6,16 +6,13 @@ import {
   DatabaseZap,
   UserCog2,
   AppWindowMac,
+  Building2,
+  Users,
 } from 'lucide-react';
 // import { ClerkLogo } from '@/assets/clerk-logo';
 import { SidebarData } from '@/types';
 
 export const sidebarData: SidebarData = {
-  user: {
-    name: 'satnaing',
-    email: 'satnaingdev@gmail.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
   teams: [
     {
       name: 'Shadcn Admin',
@@ -33,19 +30,38 @@ export const sidebarData: SidebarData = {
           icon: LayoutDashboard,
         },
         {
-          title: 'App Management',
-          icon: AppWindowMac,
+          title: 'Unit Bisnis',
+          icon: Building2,
           items: [
             {
-              title: 'Organization List',
+              title: 'Organization',
               url: '/organizations',
             },
             {
-              title: 'Role List',
-              url: '/role-management/role-list',
+              title: 'Members',
+              url: '/organizations/members',
+            },
+            {
+              title: 'Invitations',
+              url: '/organizations/invitations',
             },
           ],
         },
+        {
+          title: 'Teams',
+          icon: Users,
+          items: [
+            { url: '/teams', title: 'Team List' },
+            { url: '/teams/members', title: 'Team Members' },
+            { url: '/teams/permissions', title: 'Permissions' },
+          ],
+        },
+      ],
+    },
+
+    {
+      title: 'Data Lain',
+      items: [
         {
           title: 'Data Master',
           icon: DatabaseZap,

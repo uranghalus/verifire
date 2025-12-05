@@ -40,6 +40,8 @@ model User {
   members     Member[]
   invitations Invitation[]
 
+  teammembers TeamMember[]
+
   @@unique([email])
   @@unique([username])
   @@map("user")
@@ -58,6 +60,8 @@ model Session {
   impersonatedBy String?  @db.Text
 
   activeOrganizationId String? @db.Text
+
+  activeTeamId String? @db.Text
 
   @@unique([token])
   @@map("session")
@@ -205,6 +209,8 @@ model Organization {
   members     Member[]
   invitations Invitation[]
 
+  teams Team[]
+
   @@unique([slug])
   @@map("organization")
 }
@@ -232,5 +238,30 @@ model Invitation {
   inviterId      String
   user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
 
+  teamId String? @db.Text
+
   @@map("invitation")
+}
+
+model Team {
+  id             String       @id
+  name           String       @db.Text
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime
+  updatedAt      DateTime?    @updatedAt
+  teammembers    TeamMember[]
+
+  @@map("team")
+}
+
+model TeamMember {
+  id        String    @id
+  teamId    String
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime?
+
+  @@map("teamMember")
 }

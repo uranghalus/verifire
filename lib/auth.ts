@@ -30,7 +30,11 @@ export const auth = betterAuth({
   },
   trustedOrigins: ['http://192.168.91.37:3000'],
   plugins: [
-    organization(),
+    organization({
+      teams: {
+        enabled: true,
+      },
+    }),
     nextCookies(),
     username(),
     adminPg({
