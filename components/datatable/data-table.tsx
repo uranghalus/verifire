@@ -20,6 +20,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import { DataTablePagination } from "./data-table-pagination"
 import { Loader } from "lucide-react"
@@ -35,53 +36,61 @@ export function DataTable<TData, TValue>({
     data,
     loading
 }: DataTableProps<TData, TValue>) {
+
     const [sorting, setSorting] = useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+    const [search, setSearch] = useState("") // ⬅ ADD SEARCH STATE
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = useState({})
 
+    // 🔎 GLOBAL SEARCH FILTER
+    const filteredData = data.filter((item) =>
+        JSON.stringify(item)
+            .toLowerCase()
+            .includes(search.toLowerCase())
+    )
+
     const table = useReactTable({
-        data,
+        data: filteredData, // ⬅ APPLY FILTERED DATA
         columns,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
-        onSortingChange: setSorting,
         getSortedRowModel: getSortedRowModel(),
-        onColumnFiltersChange: setColumnFilters,
+        onSortingChange: setSorting,
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
         state: {
             sorting,
-            columnFilters,
             columnVisibility,
             rowSelection,
         },
-        // Optional: disable filtering untuk kolom tertentu
-        enableColumnFilters: false,
     })
 
     return (
         <div className="space-y-4">
-            {/* HILANGKAN SEMUA CONTROLS DI SINI */}
-            {/* Tidak ada search input, tidak ada columns dropdown */}
+
+            {/* 🔎 SEARCH INPUT */}
+            <Input
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="max-w-sm"
+            />
 
             <div className="rounded-md border">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => {
-                                    return (
-                                        <TableHead key={header.id}>
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
-                                                )}
-                                        </TableHead>
-                                    )
-                                })}
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead key={header.id}>
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                header.column.columnDef.header,
+                                                header.getContext()
+                                            )}
+                                    </TableHead>
+                                ))}
                             </TableRow>
                         ))}
                     </TableHeader>
@@ -91,7 +100,7 @@ export function DataTable<TData, TValue>({
                             loading ? (
                                 <TableRow>
                                     <TableCell colSpan={columns.length} className="h-24 text-center">
-                                        <Loader className="mx-auto animate-spin" /> ...Loading
+                                        <Loader className="mx-auto animate-spin" /> Loading...
                                     </TableCell>
                                 </TableRow>
                             ) : (
@@ -108,13 +117,14 @@ export function DataTable<TData, TValue>({
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
+                                    No results found.
                                 </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
                 </Table>
             </div>
+
             <DataTablePagination table={table} />
         </div>
     )
