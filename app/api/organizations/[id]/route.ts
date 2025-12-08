@@ -1,84 +1,64 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-// GET single organization
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params;
-  const h = await headers();
-  const session = await auth.api.getSession({ headers: h });
-  if (!session?.user)
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      {
-        status: 401,
-      }
-    );
-  const orgs = await auth.api.getFullOrganization({
+import { headers } from 'next/headers';
+import { updateOrganizationSchema } from '@/app/(main)/organizations/data/schema';
+
+export async function GET(req: Request, { params }: any) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const org = await auth.api.getFullOrganization({
     query: {
-      organizationId: id,
-      membersLimit: 100,
+      organizationId: params.id,
     },
-    headers: h,
+    headers: await headers(),
+  });
+  return NextResponse.json(org);
+}
+
+export async function PATCH(req: Request, { params }: any) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const body = await req.json();
+  const parsed = updateOrganizationSchema.safeParse(body);
+  if (!parsed.success)
+    return NextResponse.json(
+      { error: parsed.error.flatten() },
+      { status: 422 }
+    );
+
+  const updated = await auth.api.updateOrganization({
+    body: {
+      data: { name: parsed.data.name, slug: parsed.data.slug },
+      organizationId: params.id,
+    },
+    headers: await headers(),
   });
 
-  return orgs
-    ? NextResponse.json(orgs)
-    : NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json(updated);
 }
-// PATCH — update organization via Better Auth API
-export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params;
-  const h = await headers();
-  const session = await auth.api.getSession({ headers: h });
-  if (!session?.user)
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      {
-        status: 401,
-      }
-    );
-  const body = await request.json();
-  try {
-    const updated = await auth.api.updateOrganization({
-      body,
-      params: { organizationId: id },
-      headers: h,
-    });
-    return NextResponse.json(updated);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
-  }
-}
-// DELETE — Better Auth delete org
-export async function DELETE(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params;
-  const h = await headers();
-  const session = await auth.api.getSession({ headers: h });
-  if (!session?.user)
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      {
-        status: 401,
-      }
-    );
-  try {
-    await auth.api.deleteOrganization({
-      body: { organizationId: id },
-      headers: h,
-    });
-    return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
-  }
+
+export async function DELETE(req: Request, { params }: any) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  await auth.api.deleteOrganization({
+    body: {
+      organizationId: params.id,
+    },
+    headers: await headers(),
+  });
+  return NextResponse.json({ success: true });
 }
