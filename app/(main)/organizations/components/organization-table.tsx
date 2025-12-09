@@ -3,161 +3,86 @@
 'use client'
 
 import { useState } from 'react'
-import {
-    type SortingState,
-    type VisibilityState,
-    flexRender,
-    getCoreRowModel,
-    getFacetedRowModel,
-    getFacetedUniqueValues,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
-} from '@tanstack/react-table'
-import { cn } from '@/lib/utils'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
 
-
+import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender } from '@tanstack/react-table'
 import { organizationColumns as columns } from './organization-columns'
 
-import { DataTableToolbar } from '@/components/datatable/datatable-toolbar'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import {
+    Table,
+    TableHeader,
+    TableRow,
+    TableHead,
+    TableBody,
+    TableCell,
+} from '@/components/ui/table'
+import { useOrganizations } from '../hooks/organization-client'
 import { DataTablePagination } from '@/components/datatable/data-table-pagination'
-import { DataTableBulkActions } from './datatable-bulk-action'
-import { Organization } from '@/generated/prisma'
 
-interface OrganizationTableProps {
-    data: Organization[]
-    searchParams: Record<string, unknown>
-    onRefresh?: () => void
-    loading?: boolean
-}
+export function OrganizationTable() {
+    const [page, setPage] = useState(1)
+    const [limit, setLimit] = useState(10)
+    const [search, setSearch] = useState('')
 
-export function OrganizationTable({
-    data,
-    searchParams,
-    onRefresh,
-    loading = false
-}: OrganizationTableProps) {
-    const [rowSelection, setRowSelection] = useState({})
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-    const [sorting, setSorting] = useState<SortingState>([])
+
+    const { data, mutate } = useOrganizations(page, limit, search)
+
 
     const table = useReactTable({
-        data,
+        data: data?.data ?? [],
         columns,
-        state: {
-            sorting,
-            pagination: {
-                pageIndex: (searchParams.page as number) || 0,
-                pageSize: (searchParams.limit as number) || 10,
-            },
-            rowSelection,
-            columnVisibility,
+        pageCount: Math.ceil((data?.total ?? 0) / limit),
+        state: { pagination: { pageIndex: page - 1, pageSize: limit } },
+        onPaginationChange: (updater) => {
+            const newState = typeof updater === 'function' ? updater({ pageIndex: page - 1, pageSize: limit }) : updater
+            setPage(newState.pageIndex + 1)
+            setLimit(newState.pageSize)
         },
-        enableRowSelection: true,
-        onRowSelectionChange: setRowSelection,
-        onSortingChange: setSorting,
-        onColumnVisibilityChange: setColumnVisibility,
-        getPaginationRowModel: getPaginationRowModel(),
         getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFacetedRowModel: getFacetedRowModel(),
-        getFacetedUniqueValues: getFacetedUniqueValues(),
+        getPaginationRowModel: getPaginationRowModel(),
+        manualPagination: true,
     })
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p className="mt-2 text-sm text-muted-foreground">Memuat data...</p>
-                </div>
-            </div>
-        )
-    }
 
     return (
-        <div className={cn('flex flex-1 flex-col gap-4')}>
-            <DataTableToolbar
-                table={table}
-                searchPlaceholder='Cari nama organisasi, slug...'
-                searchKey='name'
-                filters={[]}
-            />
+        <div>
+            <div className="flex mb-4 gap-2">
+                <Input placeholder="Cari organisasi..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                <Button onClick={() => mutate()}>Search</Button>
+            </div>
 
-            <div className='overflow-hidden rounded-md border'>
+
+            <div className="rounded-md border">
                 <Table>
                     <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id} className='group/row'>
-                                {headerGroup.headers.map((header) => {
-                                    const meta = header.column.columnDef.meta as any
-                                    return (
-                                        <TableHead
-                                            key={header.id}
-                                            colSpan={header.colSpan}
-                                            className={cn(
-                                                'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                                                meta?.className,
-                                                meta?.thClassName
-                                            )}
-                                        >
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
-                                                )}
-                                        </TableHead>
-                                    )
-                                })}
+                        {table.getHeaderGroups().map((hg) => (
+                            <TableRow key={hg.id}>
+                                {hg.headers.map((h) => (
+                                    <TableHead key={h.id} className="border p-2">
+                                        {flexRender(h.column.columnDef.header, h.getContext())}
+                                    </TableHead>
+                                ))}
                             </TableRow>
                         ))}
                     </TableHeader>
+
+
                     <TableBody>
-                        {table.getRowModel().rows?.length ? (
+                        {table.getRowModel().rows.length ? (
                             table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && 'selected'}
-                                    className='group/row'
-                                >
-                                    {row.getVisibleCells().map((cell) => {
-                                        const meta = cell.column.columnDef.meta as any
-                                        return (
-                                            <TableCell
-                                                key={cell.id}
-                                                className={cn(
-                                                    'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                                                    meta?.className,
-                                                    meta?.tdClassName
-                                                )}
-                                            >
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext()
-                                                )}
-                                            </TableCell>
-                                        )
-                                    })}
+                                <TableRow key={row.id}>
+                                    {row.getVisibleCells().map((cell) => (
+                                        <TableCell key={cell.id} className="p-2">
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        </TableCell>
+                                    ))}
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className='h-24 text-center'
-                                >
-                                    Tidak ada data.
+                                <TableCell colSpan={columns.length} className="text-center py-6">
+                                    No results
                                 </TableCell>
                             </TableRow>
                         )}
@@ -165,8 +90,8 @@ export function OrganizationTable({
                 </Table>
             </div>
 
-            <DataTablePagination table={table} className='mt-auto' />
-            <DataTableBulkActions table={table} />
+
+            <DataTablePagination table={table} />
         </div>
     )
 }

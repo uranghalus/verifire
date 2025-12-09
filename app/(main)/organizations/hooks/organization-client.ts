@@ -1,46 +1,43 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export async function fetchOrganizations({
-  page = 1,
-  limit = 10,
-  search = '',
-  sort = 'createdAt:desc',
-} = {}) {
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: String(limit),
+import useSWR from 'swr';
+import {
+  CreateOrganizationInput,
+  UpdateOrganizationInput,
+} from '../data/schema';
+import { fetcher } from '@/lib/utils';
+
+export function useOrganizations(page: number, limit: number, search: string) {
+  const query = new URLSearchParams({
+    page: `${page}`,
+    limit: `${limit}`,
     search,
-    sort,
-  });
-  const res = await fetch(`/api/organizations?${params.toString()}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error('Failed fetching organizations');
-  return res.json(); // { data, meta }
+  }).toString();
+  const { data, error, isLoading, mutate } = useSWR(
+    `/api/organizations?${query}`,
+    fetcher
+  );
+  return { data, error, isLoading, mutate };
 }
 
-export async function createOrganization(data: any) {
+export async function createOrganization(payload: CreateOrganizationInput) {
   const res = await fetch('/api/organizations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw err;
-  }
+  if (!res.ok) throw new Error('Failed to create organization');
   return res.json();
 }
 
-export async function updateOrganization(id: string, data: any) {
+export async function updateOrganization(
+  id: string,
+  payload: UpdateOrganizationInput
+) {
   const res = await fetch(`/api/organizations/${id}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw err;
-  }
+  if (!res.ok) throw new Error('Failed to update organization');
   return res.json();
 }
 
@@ -48,15 +45,6 @@ export async function deleteOrganization(id: string) {
   const res = await fetch(`/api/organizations/${id}`, {
     method: 'DELETE',
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw err;
-  }
-  return res.json();
-}
-
-export async function getOrganization(id: string) {
-  const res = await fetch(`/api/organizations/${id}`, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed fetching organization');
+  if (!res.ok) throw new Error('Failed to delete organization');
   return res.json();
 }
