@@ -5,17 +5,33 @@ import {
 } from '../data/schema';
 import { fetcher } from '@/lib/utils';
 
-export function useOrganizations(page: number, limit: number, search: string) {
-  const query = new URLSearchParams({
-    page: `${page}`,
-    limit: `${limit}`,
-    search,
-  }).toString();
-  const { data, error, isLoading, mutate } = useSWR(
-    `/api/organizations?${query}`,
-    fetcher
-  );
-  return { data, error, isLoading, mutate };
+export function useOrganizations(
+  page: number = 1,
+  limit: number = 10,
+  search: string = ''
+) {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+    search: search || '',
+  });
+
+  const key = `/api/organizations?${params.toString()}`;
+
+  const { data, error, isLoading, mutate } = useSWR(key, fetcher, {
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
+
+  return {
+    data: data?.data || [], // <--- data dari API → { data, total, page }
+    total: data?.total || 0,
+    page: data?.page || page,
+    limit: data?.limit || limit,
+    error,
+    isLoading,
+    mutate,
+  };
 }
 
 export async function createOrganization(payload: CreateOrganizationInput) {

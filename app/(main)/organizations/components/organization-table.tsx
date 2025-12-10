@@ -1,14 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // components/organization-table.tsx
-'use client'
+"use client";
 
-import { useState } from 'react'
+import { useState, useEffect } from "react";
 
-import { useReactTable, getCoreRowModel, getPaginationRowModel, flexRender } from '@tanstack/react-table'
-import { organizationColumns as columns } from './organization-columns'
+import {
+    useReactTable,
+    getCoreRowModel,
+    getPaginationRowModel,
+    flexRender,
+} from "@tanstack/react-table";
 
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { organizationColumns as columns } from "./organization-columns";
+
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
     Table,
     TableHeader,
@@ -16,42 +22,48 @@ import {
     TableHead,
     TableBody,
     TableCell,
-} from '@/components/ui/table'
-import { useOrganizations } from '../hooks/organization-client'
-import { DataTablePagination } from '@/components/datatable/data-table-pagination'
+} from "@/components/ui/table";
+
+import { useOrganizations } from "../hooks/organization-client";
+import { DataTablePagination } from "@/components/datatable/data-table-pagination";
+import { DataTableToolbar } from "@/components/datatable/datatable-toolbar";
 
 export function OrganizationTable() {
-    const [page, setPage] = useState(1)
-    const [limit, setLimit] = useState(10)
-    const [search, setSearch] = useState('')
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const [search, setSearch] = useState("");
 
-
-    const { data, mutate } = useOrganizations(page, limit, search)
-
+    // Fetch dari SWR hook
+    const { data, total, isLoading, mutate } = useOrganizations(
+        page,
+        limit,
+        search
+    );
 
     const table = useReactTable({
-        data: data?.data ?? [],
+        data: data ?? [],
         columns,
-        pageCount: Math.ceil((data?.total ?? 0) / limit),
+        pageCount: Math.ceil((total ?? 0) / limit),
         state: { pagination: { pageIndex: page - 1, pageSize: limit } },
         onPaginationChange: (updater) => {
-            const newState = typeof updater === 'function' ? updater({ pageIndex: page - 1, pageSize: limit }) : updater
-            setPage(newState.pageIndex + 1)
-            setLimit(newState.pageSize)
+            const newState =
+                typeof updater === "function"
+                    ? updater({ pageIndex: page - 1, pageSize: limit })
+                    : updater;
+
+            setPage(newState.pageIndex + 1);
+            setLimit(newState.pageSize);
         },
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         manualPagination: true,
-    })
-
+    });
 
     return (
-        <div>
+        <div className="border rounded-md p-5 space-y-6">
             <div className="flex mb-4 gap-2">
-                <Input placeholder="Cari organisasi..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                <Button onClick={() => mutate()}>Search</Button>
+                <DataTableToolbar table={table} searchKey="name" searchPlaceholder="Search organizations..." />
             </div>
-
 
             <div className="rounded-md border">
                 <Table>
@@ -67,9 +79,14 @@ export function OrganizationTable() {
                         ))}
                     </TableHeader>
 
-
                     <TableBody>
-                        {table.getRowModel().rows.length ? (
+                        {isLoading ? (
+                            <TableRow>
+                                <TableCell colSpan={columns.length} className="text-center py-6">
+                                    Loading...
+                                </TableCell>
+                            </TableRow>
+                        ) : table.getRowModel().rows.length ? (
                             table.getRowModel().rows.map((row) => (
                                 <TableRow key={row.id}>
                                     {row.getVisibleCells().map((cell) => (
@@ -90,8 +107,7 @@ export function OrganizationTable() {
                 </Table>
             </div>
 
-
             <DataTablePagination table={table} />
         </div>
-    )
+    );
 }
