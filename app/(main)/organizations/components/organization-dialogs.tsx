@@ -1,18 +1,19 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // components/organization-dialogs.tsx
 import { useDialog } from '@/context/dialog-provider'
-
 import { OrganizationDeleteDialog } from './organization-delete-dialog'
 import { OrganizationActionDialog } from './organization-action-dialog'
+import { OrganizationMembersDialog } from './organization-members-dialog'
+import { OrganizationInvitationsDialog } from './organization-invitations-dialog'
 
 export function OrganizationDialogs() {
     const { open, setOpen, currentRow, setCurrentRow } = useDialog()
 
-    const handleClose = (type: 'edit' | 'delete' | 'members' | 'invitations') => {
+    const handleClose = () => {
         setOpen(null)
+        // Clear current row after animation
         setTimeout(() => {
             setCurrentRow(null)
-        }, 500)
+        }, 300)
     }
 
     return (
@@ -21,40 +22,56 @@ export function OrganizationDialogs() {
             <OrganizationActionDialog
                 key='organization-add'
                 open={open === 'add'}
-                onOpenChange={() => setOpen('add')}
+                onOpenChange={(isOpen) => {
+                    if (!isOpen) handleClose()
+                    else setOpen('add')
+                }}
             />
 
             {/* Edit, View, and Other Dialogs */}
             {currentRow && (
                 <>
                     <OrganizationActionDialog
-                        key={`organization-edit-${(currentRow as any).id}`}
+                        key={`organization-edit-${currentRow.id}`}
                         open={open === 'edit'}
-                        onOpenChange={() => handleClose('edit')}
-                        currentRow={currentRow as any}
+                        onOpenChange={(isOpen) => {
+                            if (!isOpen) handleClose()
+                            else setOpen('edit')
+                        }}
+                        currentRow={currentRow}
                     />
 
-                    {/*
+                    {/* Members Dialog */}
                     <OrganizationMembersDialog
                         key={`organization-members-${currentRow.id}`}
                         open={open === 'members'}
-                        onOpenChange={() => handleClose('members')}
-                        currentRow={currentRow}
+                        onOpenChange={(isOpen) => {
+                            if (!isOpen) handleClose()
+                            else setOpen('members')
+                        }}
+                        organization={currentRow}
                     />
-                    
+
+                    {/* Invitations Dialog */}
                     <OrganizationInvitationsDialog
                         key={`organization-invitations-${currentRow.id}`}
                         open={open === 'invitations'}
-                        onOpenChange={() => handleClose('invitations')}
-                        currentRow={currentRow}
+                        onOpenChange={(isOpen) => {
+                            if (!isOpen) handleClose()
+                            else setOpen('invitations')
+                        }}
+                        organization={currentRow}
                     />
-                    */}
 
                     <OrganizationDeleteDialog
-                        key={`organization-delete-${(currentRow as any).id}`}
+                        key={`organization-delete-${currentRow.id}`}
                         open={open === 'delete'}
-                        onOpenChange={() => handleClose('delete')}
-                        currentRow={currentRow as any}
+                        onOpenChange={(isOpen) => {
+                            if (!isOpen) handleClose()
+                            else setOpen('delete')
+                        }}
+                        currentRow={currentRow}
+                        onSuccess={handleClose}
                     />
                 </>
             )}
