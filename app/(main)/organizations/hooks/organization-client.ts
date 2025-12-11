@@ -24,10 +24,27 @@ export function useOrganizations(
   });
 
   return {
-    data: data?.data || [], // <--- data dari API → { data, total, page }
+    data: data?.data || [],
     total: data?.total || 0,
     page: data?.page || page,
     limit: data?.limit || limit,
+    error,
+    isLoading,
+    mutate,
+  };
+}
+
+export function useOrganization(id: string) {
+  const { data, error, isLoading, mutate } = useSWR(
+    id ? `/api/organizations/${id}` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
+  );
+
+  return {
+    data: data,
     error,
     isLoading,
     mutate,
@@ -40,7 +57,10 @@ export async function createOrganization(payload: CreateOrganizationInput) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Failed to create organization');
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to create organization');
+  }
   return res.json();
 }
 
@@ -53,7 +73,10 @@ export async function updateOrganization(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Failed to update organization');
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to update organization');
+  }
   return res.json();
 }
 
@@ -61,6 +84,16 @@ export async function deleteOrganization(id: string) {
   const res = await fetch(`/api/organizations/${id}`, {
     method: 'DELETE',
   });
-  if (!res.ok) throw new Error('Failed to delete organization');
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to delete organization');
+  }
   return res.json();
+}
+
+export async function bulkDeleteOrganizations(ids: string[]) {
+  const results = await Promise.allSettled(
+    ids.map((id) => deleteOrganization(id))
+  );
+  return results;
 }

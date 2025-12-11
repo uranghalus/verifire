@@ -4,32 +4,87 @@ import { NextResponse } from 'next/server';
 
 import { headers } from 'next/headers';
 import { updateOrganizationSchema } from '@/app/(main)/organizations/data/schema';
+export async function PUT(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const body = await req.json();
+    const parsed = updateOrganizationSchema.safeParse(body);
 
-export async function PUT(req: Request, { params }: any) {
-  const body = await req.json();
-  const parsed = updateOrganizationSchema.safeParse(body);
-  if (!parsed.success)
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error?.message || 'Invalid input' },
+        { status: 400 }
+      );
+    }
 
-  const org = await auth.api.updateOrganization({
-    body: {
-      data: {
-        name: parsed.data.name,
-        slug: parsed.data.slug,
+    const organizationId = params.id;
+
+    // Check if slug already exists for other organizations
+    if (parsed.data.slug) {
+      const allOrgs = await auth.api.listOrganizations({
+        headers: await headers(),
+      });
+
+      const slugExists = allOrgs.some(
+        (org: any) => org.slug === parsed.data.slug && org.id !== organizationId
+      );
+
+      if (slugExists) {
+        return NextResponse.json(
+          { error: 'Slug already exists' },
+          { status: 409 }
+        );
+      }
+    }
+
+    const org = await auth.api.updateOrganization({
+      body: {
+        data: {
+          name: parsed.data.name,
+          slug: parsed.data.slug,
+          logo: parsed.data.logo as string,
+          metadata: parsed.data.metadata,
+        },
+        organizationId,
       },
-      organizationId: params.id,
-    },
-    headers: await headers(),
-  });
-  return NextResponse.json(org);
+      headers: await headers(),
+    });
+
+    return NextResponse.json(org);
+  } catch (error) {
+    console.error('Error updating organization:', error);
+    return NextResponse.json(
+      { error: 'Failed to update organization' },
+      { status: 500 }
+    );
+  }
 }
 
-export async function DELETE(_: Request, { params }: any) {
-  await auth.api.deleteOrganization({
-    body: {
-      organizationId: params.id,
-    },
-    headers: await headers(),
-  });
-  return NextResponse.json({ success: true });
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const organizationId = params.id;
+
+    await auth.api.deleteOrganization({
+      body: {
+        organizationId,
+      },
+      headers: await headers(),
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Organization deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting organization:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete organization' },
+      { status: 500 }
+    );
+  }
 }

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// components/organization-delete-dialog.tsx
 'use client'
 
 import { useState } from 'react'
@@ -9,13 +7,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Organization } from '@/generated/prisma'
-import { authClient } from '@/lib/auth-client'
-
+import { useOrganizations } from '../hooks/organization-client'
+import { toast } from 'sonner'
 
 type OrganizationDeleteDialogProps = {
     open: boolean
     onOpenChange: (open: boolean) => void
-    currentRow: Organization | any
+    currentRow: Organization
 }
 
 export function OrganizationDeleteDialog({
@@ -24,30 +22,52 @@ export function OrganizationDeleteDialog({
     currentRow,
 }: OrganizationDeleteDialogProps) {
     const [value, setValue] = useState('')
+    const [isDeleting, setIsDeleting] = useState(false)
+    const { mutate } = useOrganizations()
 
     const handleDelete = async () => {
-        if (value.trim() !== currentRow.name) return
-        console.log('Deleting organization:', currentRow);
+        if (value.trim() !== currentRow.name) {
+            toast.error('Nama organisasi tidak sesuai')
+            return
+        }
 
         try {
-            const { data, error } = await authClient.organization.delete({
-                organizationId: currentRow.id
+            setIsDeleting(true)
+
+            const response = await fetch(`/api/organizations/${currentRow.id}`, {
+                method: 'DELETE',
             })
-            if (error) {
-                console.error('error deleting organization:', error)
+
+            if (response.ok) {
+                // Refresh data
+                mutate()
+                onOpenChange(false)
+                setValue('')
+                toast.success('Organisasi berhasil dihapus')
+            } else {
+                const error = await response.json()
+                toast.error(error.error || 'Gagal menghapus organisasi')
             }
-            return data
         } catch (error) {
             console.error('Error deleting organization:', error)
+            toast.error('Terjadi kesalahan saat menghapus organisasi')
+        } finally {
+            setIsDeleting(false)
         }
     }
 
     return (
         <ConfirmDialog
             open={open}
-            onOpenChange={onOpenChange}
+            onOpenChange={(state) => {
+                if (!state) {
+                    setValue('')
+                }
+                onOpenChange(state)
+            }}
             handleConfirm={handleDelete}
-            disabled={value.trim() !== currentRow.name}
+            disabled={value.trim() !== currentRow.name || isDeleting}
+            isLoading={isDeleting}
             title={
                 <span className='text-destructive'>
                     <AlertTriangle
@@ -67,11 +87,12 @@ export function OrganizationDeleteDialog({
                     </p>
 
                     <Label className='my-2'>
-                        Nama Organisasi:
+                        Ketik <span className='font-bold'>{currentRow.name}</span> untuk konfirmasi:
                         <Input
                             value={value}
                             onChange={(e) => setValue(e.target.value)}
-                            placeholder='Masukkan nama organisasi untuk konfirmasi penghapusan.'
+                            placeholder={`Ketik "${currentRow.name}" untuk konfirmasi`}
+                            className='mt-2'
                         />
                     </Label>
 
@@ -83,7 +104,7 @@ export function OrganizationDeleteDialog({
                     </Alert>
                 </div>
             }
-            confirmText='Hapus'
+            confirmText={isDeleting ? 'Menghapus...' : 'Hapus'}
             destructive
         />
     )

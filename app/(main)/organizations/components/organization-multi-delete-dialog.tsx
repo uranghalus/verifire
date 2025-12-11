@@ -1,17 +1,15 @@
-// components/organization-multi-delete-dialog.tsx
 'use client'
 
 import { useState } from 'react'
 import { type Table } from '@tanstack/react-table'
 import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { sleep } from '@/lib/utils'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Organization } from '@/generated/prisma'
-
+import { useOrganizations } from '../hooks/organization-client'
 
 type OrganizationMultiDeleteDialogProps<TData> = {
     open: boolean
@@ -27,6 +25,8 @@ export function OrganizationMultiDeleteDialog<TData>({
     table,
 }: OrganizationMultiDeleteDialogProps<TData>) {
     const [value, setValue] = useState('')
+    const [isDeleting, setIsDeleting] = useState(false)
+    const { mutate } = useOrganizations()
 
     const selectedRows = table.getFilteredSelectedRowModel().rows
 
@@ -37,38 +37,55 @@ export function OrganizationMultiDeleteDialog<TData>({
         }
 
         try {
+            setIsDeleting(true)
             const selectedOrganizations = selectedRows.map((row) => row.original as Organization)
 
             // Hapus data via API
             const deletePromises = selectedOrganizations.map(org =>
-                fetch(`/api/organizations/${org.id}`, { method: 'DELETE' })
+                fetch(`/api/organizations/${org.id}`, {
+                    method: 'DELETE'
+                })
             )
 
-            await Promise.all(deletePromises)
+            const results = await Promise.allSettled(deletePromises)
+
+            const successCount = results.filter(r => r.status === 'fulfilled').length
+            const errorCount = results.filter(r => r.status === 'rejected').length
 
             onOpenChange(false)
             setValue('')
+            table.resetRowSelection()
 
-            toast.promise(sleep(1000), {
-                loading: 'Menghapus data organisasi...',
-                success: () => {
-                    table.resetRowSelection()
-                    return `Berhasil menghapus ${selectedRows.length} data organisasi`
-                },
-                error: 'Error menghapus data',
-            })
+            // Refresh data
+            mutate()
+
+            if (errorCount > 0) {
+                toast.warning(
+                    `Berhasil menghapus ${successCount} data, gagal ${errorCount} data`
+                )
+            } else {
+                toast.success(`Berhasil menghapus ${selectedRows.length} data organisasi`)
+            }
         } catch (error) {
-            console.error('Error deleting organization:', error)
+            console.error('Error deleting organizations:', error)
             toast.error('Terjadi kesalahan saat menghapus data')
+        } finally {
+            setIsDeleting(false)
         }
     }
 
     return (
         <ConfirmDialog
             open={open}
-            onOpenChange={onOpenChange}
+            onOpenChange={(state) => {
+                if (!state) {
+                    setValue('')
+                }
+                onOpenChange(state)
+            }}
             handleConfirm={handleDelete}
-            disabled={value.trim() !== CONFIRM_WORD}
+            disabled={value.trim() !== CONFIRM_WORD || isDeleting}
+            isLoading={isDeleting}
             title={
                 <span className='text-destructive'>
                     <AlertTriangle
@@ -103,7 +120,7 @@ export function OrganizationMultiDeleteDialog<TData>({
                     </Alert>
                 </div>
             }
-            confirmText='Hapus'
+            confirmText={isDeleting ? 'Menghapus...' : 'Hapus'}
             destructive
         />
     )
