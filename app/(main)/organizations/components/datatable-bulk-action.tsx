@@ -1,4 +1,4 @@
-// components/data-table-bulk-actions.tsx
+// components/datatable-bulk-action.tsx
 import { useState } from 'react'
 import { type Table } from '@tanstack/react-table'
 import { Trash2, Download, Archive } from 'lucide-react'
@@ -10,7 +10,6 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip'
-
 
 import { DataTableBulkActionToolbar } from '@/components/datatable/data-table-bulk-actions-toolbar'
 import { OrganizationMultiDeleteDialog } from './organization-multi-delete-dialog'
@@ -28,26 +27,56 @@ export function DataTableBulkActions<TData>({
 
     const handleBulkExport = () => {
         const selectedOrganizations = selectedRows.map((row) => row.original as Organization)
-        toast.promise(sleep(2000), {
-            loading: 'Mengekspor data...',
-            success: () => {
-                table.resetRowSelection()
-                return `Berhasil mengekspor ${selectedOrganizations.length} data organisasi`
-            },
-            error: 'Error mengekspor data',
-        })
+
+        toast.promise(
+            sleep(2000).then(() => {
+                // Simulasi ekspor data
+                const csvContent = selectedOrganizations
+                    .map(org => `${org.id},${org.name},${org.slug},${org.createdAt}`)
+                    .join('\n')
+
+                const blob = new Blob([csvContent], { type: 'text/csv' })
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = 'organizations.csv'
+                a.click()
+
+                return selectedOrganizations.length
+            }),
+            {
+                loading: 'Mengekspor data...',
+                success: (count) => {
+                    table.resetRowSelection()
+                    return `Berhasil mengekspor ${count} data organisasi`
+                },
+                error: 'Error mengekspor data',
+            }
+        )
     }
 
     const handleBulkArchive = () => {
         const selectedOrganizations = selectedRows.map((row) => row.original as Organization)
-        toast.promise(sleep(2000), {
-            loading: 'Mengarsipkan data...',
-            success: () => {
-                table.resetRowSelection()
-                return `Berhasil mengarsipkan ${selectedOrganizations.length} data organisasi`
-            },
-            error: 'Error mengarsipkan data',
-        })
+
+        toast.promise(
+            Promise.all(
+                selectedOrganizations.map(org =>
+                    fetch(`/api/organizations/${org.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ metadata: { archived: true } })
+                    }).then(res => res.json())
+                )
+            ),
+            {
+                loading: 'Mengarsipkan data...',
+                success: () => {
+                    table.resetRowSelection()
+                    return `Berhasil mengarsipkan ${selectedOrganizations.length} data organisasi`
+                },
+                error: 'Error mengarsipkan data',
+            }
+        )
     }
 
     return (

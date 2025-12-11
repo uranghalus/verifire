@@ -1,3 +1,4 @@
+// components/organization-multi-delete-dialog.tsx
 'use client'
 
 import { useState } from 'react'
@@ -26,9 +27,10 @@ export function OrganizationMultiDeleteDialog<TData>({
 }: OrganizationMultiDeleteDialogProps<TData>) {
     const [value, setValue] = useState('')
     const [isDeleting, setIsDeleting] = useState(false)
-    const { mutate } = useOrganizations()
+    const { data, mutate } = useOrganizations()
 
     const selectedRows = table.getFilteredSelectedRowModel().rows
+    const selectedIds = selectedRows.map((row) => (row.original as Organization).id)
 
     const handleDelete = async () => {
         if (value.trim() !== CONFIRM_WORD) {
@@ -38,37 +40,57 @@ export function OrganizationMultiDeleteDialog<TData>({
 
         try {
             setIsDeleting(true)
-            const selectedOrganizations = selectedRows.map((row) => row.original as Organization)
 
-            // Hapus data via API
-            const deletePromises = selectedOrganizations.map(org =>
-                fetch(`/api/organizations/${org.id}`, {
-                    method: 'DELETE'
-                })
+            // Optimistic update
+            const previousData = data || []
+            const newData = previousData.filter(
+                (org: Organization) => !selectedIds.includes(org.id)
             )
 
-            const results = await Promise.allSettled(deletePromises)
+            const deletePromises = selectedIds.map(id =>
+                fetch(`/api/organizations/${id}`, { method: 'DELETE' })
+                    .then(async (response) => {
+                        if (!response.ok) {
+                            const error = await response.json()
+                            throw new Error(error.error || 'Gagal menghapus organisasi')
+                        }
+                        return response.json()
+                    })
+            )
 
-            const successCount = results.filter(r => r.status === 'fulfilled').length
-            const errorCount = results.filter(r => r.status === 'rejected').length
+            const promise = Promise.allSettled(deletePromises)
+                .then((results) => {
+                    const failedDeletes = results.filter(r => r.status === 'rejected')
 
-            onOpenChange(false)
-            setValue('')
-            table.resetRowSelection()
+                    if (failedDeletes.length > 0) {
+                        // Rollback on partial failure
+                        mutate(previousData, { revalidate: false })
+                        throw new Error(`Gagal menghapus ${failedDeletes.length} data`)
+                    }
 
-            // Refresh data
-            mutate()
+                    return results
+                })
 
-            if (errorCount > 0) {
-                toast.warning(
-                    `Berhasil menghapus ${successCount} data, gagal ${errorCount} data`
-                )
-            } else {
-                toast.success(`Berhasil menghapus ${selectedRows.length} data organisasi`)
-            }
+            await toast.promise(promise, {
+                loading: `Menghapus ${selectedRows.length} organisasi...`,
+                success: () => {
+                    // Apply optimistic update
+                    mutate(newData, { revalidate: false })
+
+                    onOpenChange(false)
+                    setValue('')
+                    table.resetRowSelection()
+
+                    return `Berhasil menghapus ${selectedRows.length} data organisasi`
+                },
+                error: (error) => {
+                    // Revalidate untuk data yang konsisten
+                    mutate()
+                    return error.message || 'Terjadi kesalahan saat menghapus data'
+                },
+            })
         } catch (error) {
             console.error('Error deleting organizations:', error)
-            toast.error('Terjadi kesalahan saat menghapus data')
         } finally {
             setIsDeleting(false)
         }

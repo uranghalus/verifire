@@ -1,3 +1,4 @@
+// components/organization-delete-dialog.tsx
 'use client'
 
 import { useState } from 'react'
@@ -14,16 +15,18 @@ type OrganizationDeleteDialogProps = {
     open: boolean
     onOpenChange: (open: boolean) => void
     currentRow: Organization
+    onSuccess?: () => void
 }
 
 export function OrganizationDeleteDialog({
     open,
     onOpenChange,
     currentRow,
+    onSuccess,
 }: OrganizationDeleteDialogProps) {
     const [value, setValue] = useState('')
     const [isDeleting, setIsDeleting] = useState(false)
-    const { mutate } = useOrganizations()
+    const { data, mutate } = useOrganizations()
 
     const handleDelete = async () => {
         if (value.trim() !== currentRow.name) {
@@ -34,23 +37,45 @@ export function OrganizationDeleteDialog({
         try {
             setIsDeleting(true)
 
-            const response = await fetch(`/api/organizations/${currentRow.id}`, {
+            // Optimistic update
+            const previousData = data || []
+            const filteredData = previousData.filter((org: Organization) => org.id !== currentRow.id)
+
+            const promise = fetch(`/api/organizations/${currentRow.id}`, {
                 method: 'DELETE',
+            }).then(async (response) => {
+                if (!response.ok) {
+                    const error = await response.json()
+                    // Rollback on error
+                    mutate(previousData, { revalidate: false })
+                    throw new Error(error.error || 'Gagal menghapus organisasi')
+                }
+                return response.json()
             })
 
-            if (response.ok) {
-                // Refresh data
-                mutate()
-                onOpenChange(false)
-                setValue('')
-                toast.success('Organisasi berhasil dihapus')
-            } else {
-                const error = await response.json()
-                toast.error(error.error || 'Gagal menghapus organisasi')
-            }
+            await toast.promise(promise, {
+                loading: 'Menghapus organisasi...',
+                success: () => {
+                    // Update dengan optimistic data
+                    mutate(filteredData, { revalidate: false })
+
+                    // Reset form dan close dialog
+                    setValue('')
+                    onOpenChange(false)
+
+                    // Panggil callback jika ada
+                    if (onSuccess) onSuccess()
+
+                    return 'Organisasi berhasil dihapus'
+                },
+                error: (error) => {
+                    // Revalidate untuk mendapatkan data terbaru
+                    mutate()
+                    return error.message || 'Terjadi kesalahan saat menghapus organisasi'
+                },
+            })
         } catch (error) {
             console.error('Error deleting organization:', error)
-            toast.error('Terjadi kesalahan saat menghapus organisasi')
         } finally {
             setIsDeleting(false)
         }

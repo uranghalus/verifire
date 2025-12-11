@@ -1,3 +1,4 @@
+// components/organization-action-dialog.tsx
 'use client'
 
 import { z } from 'zod'
@@ -62,38 +63,44 @@ export function OrganizationActionDialog({
     })
 
     const onSubmit = async (values: OrganizationForm) => {
-        try {
-            const url = isEdit ? `/api/organizations/${currentRow.id}` : '/api/organizations'
-            const method = isEdit ? 'PUT' : 'POST'
+        const url = isEdit ? `/api/organizations/${currentRow.id}` : '/api/organizations'
+        const method = isEdit ? 'PUT' : 'POST'
+        const successMessage = isEdit
+            ? 'Organisasi berhasil diperbarui'
+            : 'Organisasi berhasil ditambahkan'
+        const loadingMessage = isEdit
+            ? 'Memperbarui organisasi...'
+            : 'Menambahkan organisasi...'
 
-            const response = await fetch(url, {
+        try {
+            const promise = fetch(url, {
                 method,
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify(values),
-            });
+            }).then(async (response) => {
+                const result = await response.json()
 
-            const result = await response.json()
+                if (!response.ok) {
+                    throw new Error(result.error || 'Gagal menyimpan organisasi')
+                }
 
-            if (response.ok) {
-                form.reset()
-                onOpenChange(false)
+                return result
+            })
 
-                // Refresh data dengan mutate
-                mutate()
-
-                toast.success(
-                    isEdit
-                        ? 'Organisasi berhasil diperbarui'
-                        : 'Organisasi berhasil ditambahkan'
-                )
-            } else {
-                toast.error(result.error || 'Gagal menyimpan organisasi')
-            }
+            await toast.promise(promise, {
+                loading: loadingMessage,
+                success: (data) => {
+                    form.reset()
+                    onOpenChange(false)
+                    mutate() // Refresh data
+                    return successMessage
+                },
+                error: (error) => error.message || 'Terjadi kesalahan saat menyimpan organisasi',
+            })
         } catch (error) {
             console.error('Error saving organization:', error)
-            toast.error('Terjadi kesalahan saat menyimpan organisasi')
         }
     }
 

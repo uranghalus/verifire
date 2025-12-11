@@ -73,13 +73,12 @@ export async function POST(req: Request) {
         { status: 409 }
       );
     }
+    console.log('Parsed Data', parsed);
 
     const org = await auth.api.createOrganization({
       body: {
         name: parsed.data.name,
         slug: parsed.data.slug,
-        logo: parsed.data.logo as string,
-        metadata: parsed.data.metadata || null,
       },
       headers: await headers(),
     });

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '@/lib/auth';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { headers } from 'next/headers';
 import { updateOrganizationSchema } from '@/app/(main)/organizations/data/schema';
@@ -63,11 +63,12 @@ export async function PUT(
 }
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const organizationId = params.id;
+    const { id } = await context.params;
+    const organizationId = id;
 
     await auth.api.deleteOrganization({
       body: {

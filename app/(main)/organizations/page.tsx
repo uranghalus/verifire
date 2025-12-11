@@ -7,6 +7,7 @@ import { Metadata } from 'next'
 import { OrganizationTable } from './components/organization-table'
 import { DialogProvider } from '@/context/dialog-provider'
 import { OrganizationDialogs } from './components/organization-dialogs'
+import OrganizationPrimaryButton from './components/organization-primary-button'
 
 // export const metadata: Metadata = {
 //   title: 'Data Organisasi',
@@ -17,6 +18,7 @@ export default function page() {
     <DialogProvider>
 
       <Main fluid>
+        <OrganizationPrimaryButton />
         <OrganizationTable />
         <OrganizationDialogs />
       </Main>
