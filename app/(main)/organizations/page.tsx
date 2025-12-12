@@ -1,27 +1,28 @@
-'use client'
-import React from 'react'
+import { DataTable } from "@/components/datatable/data-table";
+import { columns } from "./components/organization-columns";
+import { AddDialog } from "./components/add-dialog";
+import { EditDialog } from "./components/edit-dialog";
+import { DeleteDialog } from "./components/delete-dialog";
+import { listOrganizations } from "./data/actions";
+import { DialogProvider } from "@/context/dialog-provider";
 
 
-import { Main } from '@/components/main'
-import { Metadata } from 'next'
-import { OrganizationTable } from './components/organization-table'
-import { DialogProvider } from '@/context/dialog-provider'
-import { OrganizationDialogs } from './components/organization-dialogs'
-import OrganizationPrimaryButton from './components/organization-primary-button'
+export default async function OrganizationsPage() {
+  const { data } = await listOrganizations();
 
-// export const metadata: Metadata = {
-//   title: 'Data Organisasi',
-//   description: 'Data Organisasi page',
-// }
-export default function page() {
   return (
     <DialogProvider>
+      <h1 className="text-xl font-bold">Organizations</h1>
 
-      <Main fluid>
-        <OrganizationPrimaryButton />
-        <OrganizationTable />
-        <OrganizationDialogs />
-      </Main>
+      <DataTable
+        columns={columns}
+        data={data ?? []}
+      />
+
+      {/* Dialogs */}
+      <AddDialog />
+      <EditDialog />
+      <DeleteDialog />
     </DialogProvider>
-  )
+  );
 }

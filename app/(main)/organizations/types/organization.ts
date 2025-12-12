@@ -1,40 +1,42 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// types/organization.ts
 export interface Organization {
   id: string;
   name: string;
   slug: string;
-  logo?: string | null;
-  createdAt: Date | string;
-  metadata?: string | null;
-  memberCount?: number;
-  members?: Member[];
-  invitations?: Invitation[];
+  description?: string;
+  logo?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  ownerId: string;
+  metadata?: Record<string, any>;
 }
 
-export interface Member {
-  id: string;
-  organizationId: string;
-  organization: Organization;
-  userId: string;
-  user: User;
-  role: string;
-  createdAt: Date | string;
+export interface CreateOrganizationInput {
+  name: string;
+  slug: string;
+  description?: string;
+  logo?: string;
+  metadata?: Record<string, any>;
 }
 
-export interface Invitation {
+export interface UpdateOrganizationInput
+  extends Partial<CreateOrganizationInput> {
   id: string;
-  organizationId: string;
-  organization: Organization;
-  email: string;
-  role?: string | null;
-  status: string;
-  expiresAt: Date | string;
-  inviterId: string;
-  user: User;
 }
 
-export interface User {
-  id: string;
-  email: string;
-  name?: string | null;
-  // tambahkan field lain sesuai kebutuhan
+export interface OrganizationListResponse {
+  data: Organization[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface OrganizationFilters {
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
