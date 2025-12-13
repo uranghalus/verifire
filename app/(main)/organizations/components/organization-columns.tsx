@@ -2,67 +2,39 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { Organization } from "../types/organization";
+import { DataTableColumnHeader } from "@/components/datatable/datatable-column-header";
 import { Button } from "@/components/ui/button";
-import { useDialog } from "@/context/dialog-provider";
 
 
-export type OrgType = {
-    id: string;
-    name: string;
-    slug: string;
-    logo?: string | null;
-    createdAt?: string;
-};
-
-export const columns: ColumnDef<OrgType>[] = [
+export const columns: ColumnDef<Organization>[] = [
     {
-        accessorKey: "name",
-        header: "Name",
-    },
-    {
-        accessorKey: "slug",
-        header: "Slug",
-    },
-    {
-        accessorKey: "createdAt",
-        header: "Created",
-        cell: ({ row }) => (
-            <span>{new Date(row.original.createdAt).toLocaleDateString()}</span>
+        accessorKey: 'name',
+        header: ({ column }) => (
+            <DataTableColumnHeader column={column} title='Nama Unit Bisnis' />
         ),
+        cell: ({ row }) => <div className='font-medium'>{row.getValue('name')}</div>,
     },
-
     {
-        id: "actions",
-        header: "Aksi",
-        cell: ({ row }) => {
-            const org = row.original;
-            const { setOpen, setCurrentRow } = useDialog<OrgType>();
-
-            return (
-                <div className="flex gap-2">
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                            setCurrentRow(org);
-                            setOpen("edit");
-                        }}
-                    >
-                        Edit
-                    </Button>
-
-                    <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                            setCurrentRow(org);
-                            setOpen("delete");
-                        }}
-                    >
-                        Delete
-                    </Button>
-                </div>
-            );
-        },
+        accessorKey: 'slug',
+        header: ({ column }) => (
+            <DataTableColumnHeader column={column} title='Slug' />
+        ),
+        cell: ({ row }) => <div className='font-medium'>{row.getValue('slug')}</div>,
     },
+    {
+        id: 'actions',
+        cell: ({ row }) => {
+            const org = row.original
+            return (
+                <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => console.log('delete', org.id)}
+                >
+                    Delete
+                </Button>
+            )
+        },
+    }
 ];
