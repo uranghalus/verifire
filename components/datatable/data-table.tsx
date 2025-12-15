@@ -1,16 +1,6 @@
-"use client"
+import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
+import type * as React from 'react';
 
-import {
-    ColumnDef,
-    ColumnFiltersState,
-    SortingState,
-    VisibilityState,
-    flexRender,
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
-} from "@tanstack/react-table"
 
 import {
     Table,
@@ -18,114 +8,96 @@ import {
     TableCell,
     TableHead,
     TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { useState } from "react"
-import { DataTablePagination } from "./data-table-pagination"
-import { Loader } from "lucide-react"
+    TableRow
+} from '@/components/ui/table';
 
-interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[]
-    data: TData[]
-    loading?: boolean
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { DataTablePagination } from './data-table-pagination';
+import { getCommonPinningStyles } from '@/lib/data-table';
+
+interface DataTableProps<TData> extends React.ComponentProps<'div'> {
+    table: TanstackTable<TData>;
+    actionBar?: React.ReactNode;
 }
 
-export function DataTable<TData, TValue>({
-    columns,
-    data,
-    loading
-}: DataTableProps<TData, TValue>) {
-
-    const [sorting, setSorting] = useState<SortingState>([])
-    const [search, setSearch] = useState("") // ⬅ ADD SEARCH STATE
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-    const [rowSelection, setRowSelection] = useState({})
-
-    // 🔎 GLOBAL SEARCH FILTER
-    const filteredData = data.filter((item) =>
-        JSON.stringify(item)
-            .toLowerCase()
-            .includes(search.toLowerCase())
-    )
-
-    const table = useReactTable({
-        data: filteredData, // ⬅ APPLY FILTERED DATA
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        onSortingChange: setSorting,
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
-        state: {
-            sorting,
-            columnVisibility,
-            rowSelection,
-        },
-    })
-
+export function DataTable<TData>({
+    table,
+    actionBar,
+    children
+}: DataTableProps<TData>) {
     return (
-        <div className="space-y-4">
-
-            {/* 🔎 SEARCH INPUT */}
-            <Input
-                placeholder="Search..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="max-w-sm"
-            />
-
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                            )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-
-                        {table.getRowModel().rows?.length ? (
-                            loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={columns.length} className="h-24 text-center">
-                                        <Loader className="mx-auto animate-spin" /> Loading...
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                table.getRowModel().rows.map((row) => (
-                                    <TableRow key={row.id}>
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                            </TableCell>
+        <div className='flex flex-1 flex-col space-y-4'>
+            {children}
+            <div className='relative flex flex-1'>
+                <div className='absolute inset-0 flex overflow-hidden rounded-lg border'>
+                    <ScrollArea className='h-full w-full'>
+                        <Table>
+                            <TableHeader className='bg-muted sticky top-0 z-10'>
+                                {table.getHeaderGroups().map((headerGroup) => (
+                                    <TableRow key={headerGroup.id}>
+                                        {headerGroup.headers.map((header) => (
+                                            <TableHead
+                                                key={header.id}
+                                                colSpan={header.colSpan}
+                                                style={{
+                                                    ...getCommonPinningStyles({ column: header.column })
+                                                }}
+                                            >
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                        header.column.columnDef.header,
+                                                        header.getContext()
+                                                    )}
+                                            </TableHead>
                                         ))}
                                     </TableRow>
-                                ))
-                            )
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                                ))}
+                            </TableHeader>
+                            <TableBody>
+                                {table.getRowModel().rows?.length ? (
+                                    table.getRowModel().rows.map((row) => (
+                                        <TableRow
+                                            key={row.id}
+                                            data-state={row.getIsSelected() && 'selected'}
+                                        >
+                                            {row.getVisibleCells().map((cell) => (
+                                                <TableCell
+                                                    key={cell.id}
+                                                    style={{
+                                                        ...getCommonPinningStyles({ column: cell.column })
+                                                    }}
+                                                >
+                                                    {flexRender(
+                                                        cell.column.columnDef.cell,
+                                                        cell.getContext()
+                                                    )}
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={table.getAllColumns().length}
+                                            className='h-24 text-center'
+                                        >
+                                            No results.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                        <ScrollBar orientation='horizontal' />
+                    </ScrollArea>
+                </div>
             </div>
-
-            <DataTablePagination table={table} />
+            <div className='flex flex-col gap-2.5'>
+                <DataTablePagination table={table} />
+                {actionBar &&
+                    table.getFilteredSelectedRowModel().rows.length > 0 &&
+                    actionBar}
+            </div>
         </div>
-    )
+    );
 }

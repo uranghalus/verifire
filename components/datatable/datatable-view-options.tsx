@@ -1,28 +1,32 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu'
-import { type Table } from '@tanstack/react-table'
-import { Button } from '@/components/ui/button'
+import type { Table } from '@tanstack/react-table';
+import { ArrowUpDown, CheckIcon, Settings2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
-import { Settings2 } from 'lucide-react'
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList
+} from '@/components/ui/command';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import * as React from 'react';
+
 
 interface DataTableViewOptionsProps<TData> {
-    table: Table<TData>
+    table: Table<TData>;
 }
 
-/**
- * ✅ Komponen ini kompatibel dengan Next.js (App Router)
- * Menyediakan menu dropdown untuk toggle visibilitas kolom tabel.
- */
 export function DataTableViewOptions<TData>({
-    table,
+    table
 }: DataTableViewOptionsProps<TData>) {
     const columns = React.useMemo(
         () =>
@@ -33,35 +37,51 @@ export function DataTableViewOptions<TData>({
                         typeof column.accessorFn !== 'undefined' && column.getCanHide()
                 ),
         [table]
-    )
+    );
 
     return (
-        <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
+        <Popover>
+            <PopoverTrigger asChild>
                 <Button
-                    variant="outline"
-                    size="sm"
-                    className="ms-auto hidden h-8 lg:flex"
+                    aria-label='Toggle columns'
+                    role='combobox'
+                    variant='outline'
+                    size='sm'
+                    className='ml-auto hidden h-8 lg:flex'
                 >
-                    <Settings2 className="size-4" />
-                    <span className="ml-2">View</span>
+                    <Settings2 />
+                    View
+                    <ArrowUpDown className='ml-auto opacity-50' />
                 </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end" className="w-[150px]">
-                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {columns.map((column) => (
-                    <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    >
-                        {column.id}
-                    </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
-    )
+            </PopoverTrigger>
+            <PopoverContent align='end' className='w-44 p-0'>
+                <Command>
+                    <CommandInput placeholder='Search columns...' />
+                    <CommandList>
+                        <CommandEmpty>No columns found.</CommandEmpty>
+                        <CommandGroup>
+                            {columns.map((column) => (
+                                <CommandItem
+                                    key={column.id}
+                                    onSelect={() =>
+                                        column.toggleVisibility(!column.getIsVisible())
+                                    }
+                                >
+                                    <span className='truncate'>
+                                        {column.columnDef.meta?.label ?? column.id}
+                                    </span>
+                                    <CheckIcon
+                                        className={cn(
+                                            'ml-auto size-4 shrink-0',
+                                            column.getIsVisible() ? 'opacity-100' : 'opacity-0'
+                                        )}
+                                    />
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
 }

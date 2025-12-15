@@ -1,68 +1,151 @@
-// components/data-table-toolbar.tsx
+'use client';
 
-import { Table } from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { DataTableFacetedFilter } from "./datatable-faceted-filter"
-import { CrossIcon } from "lucide-react"
-import { DataTableViewOptions } from "./datatable-view-options"
+import type { Column, Table } from '@tanstack/react-table';
+import * as React from 'react';
 
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { CrossIcon } from 'lucide-react';
+import { DataTableViewOptions } from './datatable-view-options';
+import { DataTableFacetedFilter } from './datatable-faceted-filter';
+import { DataTableDateFilter } from './data-table-date-filter';
+import { DataTableSliderFilter } from './datat-table-slider-filter';
 
-interface DataTableToolbarProps<TData> {
-    table: Table<TData>
-    searchKey: string
-    searchPlaceholder?: string
-    filters?: {
-        columnId: string
-        title: string
-        options: {
-            label: string
-            value: string
-            icon?: React.ComponentType<{ className?: string }>
-        }[]
-    }[]
+
+interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
+    table: Table<TData>;
 }
 
 export function DataTableToolbar<TData>({
     table,
-    searchKey,
-    searchPlaceholder = "Search...",
-    filters = [],
+    children,
+    className,
+    ...props
 }: DataTableToolbarProps<TData>) {
-    const isFiltered = table.getState().columnFilters.length > 0
+    const isFiltered = table.getState().columnFilters.length > 0;
+
+    const columns = React.useMemo(
+        () => table.getAllColumns().filter((column) => column.getCanFilter()),
+        [table]
+    );
+
+    const onReset = React.useCallback(() => {
+        table.resetColumnFilters();
+    }, [table]);
 
     return (
-        <div className="flex items-center justify-between w-full">
-            <div className="flex flex-1 items-center space-x-2">
-                <Input
-                    placeholder={searchPlaceholder}
-                    value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-                    onChange={(event) =>
-                        table.getColumn(searchKey)?.setFilterValue(event.target.value)
-                    }
-                    className="h-8 w-[150px] lg:w-[250px]"
-                />
-                {filters.map((filter) => (
-                    <DataTableFacetedFilter
-                        key={filter.columnId}
-                        column={table.getColumn(filter.columnId)}
-                        title={filter.title}
-                        options={filter.options}
-                    />
+        <div
+            role='toolbar'
+            aria-orientation='horizontal'
+            className={cn(
+                'flex w-full items-start justify-between gap-2 p-1',
+                className
+            )}
+            {...props}
+        >
+            <div className='flex flex-1 flex-wrap items-center gap-2'>
+                {columns.map((column) => (
+                    <DataTableToolbarFilter key={column.id} column={column} />
                 ))}
                 {isFiltered && (
                     <Button
-                        variant="ghost"
-                        onClick={() => table.resetColumnFilters()}
-                        className="h-8 px-2 lg:px-3"
+                        aria-label='Reset filters'
+                        variant='outline'
+                        size='sm'
+                        className='border-dashed'
+                        onClick={onReset}
                     >
+                        <CrossIcon />
                         Reset
-                        <CrossIcon className="ml-2 h-4 w-4" />
                     </Button>
                 )}
             </div>
-            <DataTableViewOptions table={table} />
+            <div className='flex items-center gap-2'>
+                {children}
+                <DataTableViewOptions table={table} />
+            </div>
         </div>
-    )
+    );
+}
+interface DataTableToolbarFilterProps<TData> {
+    column: Column<TData>;
+}
+
+function DataTableToolbarFilter<TData>({
+    column
+}: DataTableToolbarFilterProps<TData>) {
+    {
+        const columnMeta = column.columnDef.meta;
+
+        const onFilterRender = React.useCallback(() => {
+            if (!columnMeta?.variant) return null;
+
+            switch (columnMeta.variant) {
+                case 'text':
+                    return (
+                        <Input
+                            placeholder={columnMeta.placeholder ?? columnMeta.label}
+                            value={(column.getFilterValue() as string) ?? ''}
+                            onChange={(event) => column.setFilterValue(event.target.value)}
+                            className='h-8 w-40 lg:w-56'
+                        />
+                    );
+
+                case 'number':
+                    return (
+                        <div className='relative'>
+                            <Input
+                                type='number'
+                                inputMode='numeric'
+                                placeholder={columnMeta.placeholder ?? columnMeta.label}
+                                value={(column.getFilterValue() as string) ?? ''}
+                                onChange={(event) => column.setFilterValue(event.target.value)}
+                                className={cn('h-8 w-[120px]', columnMeta.unit && 'pr-8')}
+                            />
+                            {columnMeta.unit && (
+                                <span className='bg-accent text-muted-foreground absolute top-0 right-0 bottom-0 flex items-center rounded-r-md px-2 text-sm'>
+                                    {columnMeta.unit}
+                                </span>
+                            )}
+                        </div>
+                    );
+
+                case 'range':
+                    return (
+                        <DataTableSliderFilter
+                            column={column}
+                            title={columnMeta.label ?? column.id}
+                        />
+                    );
+
+                case 'date':
+                case 'dateRange':
+                    return (
+                        <DataTableDateFilter
+                            column={column}
+                            title={columnMeta.label ?? column.id}
+                            multiple={columnMeta.variant === 'dateRange'}
+                        />
+                    );
+
+                case 'select':
+                case 'multiSelect':
+                    return (
+                        <DataTableFacetedFilter
+                            column={column}
+                            title={columnMeta.label ?? column.id}
+                            options={columnMeta.options ?? []}
+                            multiple={columnMeta.variant === 'multiSelect'}
+                        />
+                    );
+
+                default:
+                    return null;
+            }
+        }, [column, columnMeta]);
+
+        return onFilterRender();
+    }
 }
