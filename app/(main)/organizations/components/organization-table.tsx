@@ -17,17 +17,18 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { useOrganizations } from '@/hooks/crud/use-organization'
+import { useDebounce, useOrganizations } from '@/hooks/crud/use-organization'
 import { columns } from './organization-columns'
 import { flexRender } from '@tanstack/react-table'
 export function OrganizationTable() {
     const [page, setPage] = useState(1)
     const [search, setSearch] = useState('')
+    const debouncedSearch = useDebounce(search, 500)
 
     const { organizations, meta, isLoading } = useOrganizations(
         page,
         10,
-        search
+        debouncedSearch
     )
 
     const table = useReactTable({
@@ -39,7 +40,7 @@ export function OrganizationTable() {
         pageCount: Math.ceil((meta?.total ?? 0) / 10),
     })
 
-    if (isLoading) return <p>Loading...</p>
+
 
     return (
         <div className="space-y-4">
@@ -51,6 +52,9 @@ export function OrganizationTable() {
                     setSearch(e.target.value)
                 }}
             />
+            {isLoading && (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+            )}
 
             <Table>
                 <TableHeader>
