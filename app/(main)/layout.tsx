@@ -11,7 +11,7 @@ import { Header } from "@/components/header"
 import { Search } from "@/components/search"
 import { ThemeSwitch } from "@/components/theme-switcher"
 import { ProfileDropdown } from "@/components/profile-dropdown"
-
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 type AuthenticatedLayoutProps = {
     children?: React.ReactNode
 }
@@ -43,7 +43,7 @@ export default async function AuthenticatedLayout({ children }: AuthenticatedLay
                             </div>
                         </Header>
 
-                        {children}
+                        <NuqsAdapter>{children}</NuqsAdapter>
                     </SidebarInset>
                 </SidebarProvider>
             </LayoutProvider>

@@ -4,12 +4,9 @@ export interface Organization {
   id: string;
   name: string;
   slug: string;
-  description?: string;
-  logo?: string;
   createdAt: Date;
-  updatedAt: Date;
-  ownerId: string;
-  metadata?: Record<string, any>;
+  logo?: string | null;
+  metadata?: any;
 }
 
 export interface CreateOrganizationInput {

@@ -1,108 +1,41 @@
 'use client'
 
-import { useState } from 'react'
-import {
-    useReactTable,
-    getCoreRowModel,
-    getPaginationRowModel,
-} from '@tanstack/react-table'
+import { DataTable } from "@/components/datatable/data-table";
+import { DataTableToolbar } from "@/components/datatable/datatable-toolbar";
+import { useDataTable } from "@/hooks/use-data-table";
+import { ColumnDef } from "@tanstack/react-table";
 
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import { useDebounce, useOrganizations } from '@/hooks/crud/use-organization'
-import { columns } from './organization-columns'
-import { flexRender } from '@tanstack/react-table'
-export function OrganizationTable() {
-    const [page, setPage] = useState(1)
-    const [search, setSearch] = useState('')
-    const debouncedSearch = useDebounce(search, 500)
+import { parseAsInteger, useQueryState } from 'nuqs';
+interface OrgTableParams<TData, TValue> {
+    data: TData[];
+    totalItems: number;
+    columns: ColumnDef<TData, TValue>[];
+}
+import React from 'react'
 
-    const { organizations, meta, isLoading } = useOrganizations(
-        page,
-        10,
-        debouncedSearch
-    )
+export default function OrganizationTable<TData, TValue>({
+    data,
+    totalItems,
+    columns
+}: OrgTableParams<TData, TValue>) {
+    const [pageSize] = useQueryState('perPage', parseAsInteger.withDefault(10));
 
-    const table = useReactTable({
-        data: organizations,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        manualPagination: true,
-        pageCount: Math.ceil((meta?.total ?? 0) / 10),
-    })
+    const pageCount = Math.ceil(totalItems / pageSize);
 
-
-
+    const { table } = useDataTable({
+        data, // product data
+        columns, // product columns
+        pageCount: pageCount,
+        shallow: false, //Setting to false triggers a network request with the updated querystring.
+        debounceMs: 500
+    });
+    console.log({
+        dataLength: data.length,
+        rows: table.getRowModel().rows.length,
+    });
     return (
-        <div className="space-y-4">
-            <Input
-                placeholder="Search organization..."
-                value={search}
-                onChange={(e) => {
-                    setPage(1)
-                    setSearch(e.target.value)
-                }}
-            />
-            {isLoading && (
-                <p className="text-sm text-muted-foreground">Loading...</p>
-            )}
-
-            <Table>
-                <TableHeader>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id}>
-                            {headerGroup.headers.map((header) => (
-                                <TableHead key={header.id}>
-                                    {header.isPlaceholder
-                                        ? null
-                                        : flexRender(
-                                            header.column.columnDef.header,
-                                            header.getContext()
-                                        )}
-                                </TableHead>
-                            ))}
-                        </TableRow>
-                    ))}
-                </TableHeader>
-                <TableBody>
-                    {table.getRowModel().rows.map((row) => (
-                        <TableRow key={row.id}>
-                            {row.getVisibleCells().map((cell) => (
-                                <TableCell key={cell.id}>
-                                    {flexRender(
-                                        cell.column.columnDef.cell,
-                                        cell.getContext()
-                                    )}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-
-            <div className="flex justify-between">
-                <Button
-                    disabled={page === 1}
-                    onClick={() => setPage((p) => p - 1)}
-                >
-                    Prev
-                </Button>
-                <Button
-                    disabled={page >= Math.ceil((meta?.total ?? 0) / 10)}
-                    onClick={() => setPage((p) => p + 1)}
-                >
-                    Next
-                </Button>
-            </div>
-        </div>
-    )
+        <DataTable table={table}>
+            <DataTableToolbar table={table} />
+        </DataTable>
+    );
 }

@@ -1,36 +1,45 @@
-import { fetcher } from '@/lib/utils';
-import { useEffect, useState } from 'react';
-import useSWR from 'swr';
-export function useDebounce<T>(value: T, delay = 500) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
+'use server';
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
+import { auth } from '@/lib/auth';
+import { getServerSession } from '@/lib/get-session';
+import { headers } from 'next/headers';
 
-    return () => clearTimeout(handler);
-  }, [value, delay]);
+type Params = {
+  page?: number;
+  limit?: number;
+  search?: string;
+};
 
-  return debouncedValue;
-}
-export function useOrganizations(page = 1, limit = 10, search = '') {
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: String(limit),
-    search,
+export async function getOrganization({
+  page = 1,
+  limit = 10,
+  search = '',
+}: Params) {
+  const session = await getServerSession();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+  const organizations = await auth.api.listOrganizations({
+    headers: await headers(),
   });
-
-  const key = `/api/organizations?${params.toString()}`;
-
-  const { data, mutate, isLoading } = useSWR(key, fetcher, {
-    keepPreviousData: true,
-  });
-
+  // 2️⃣ Search (manual)
+  const filtered = search
+    ? organizations.filter((org) =>
+        org.name.toLowerCase().includes(search.toLowerCase())
+      )
+    : organizations;
+  // 3️⃣ Pagination (manual)
+  const total = filtered.length;
+  const start = (page - 1) * limit;
+  const end = start + limit;
+  const paginated = filtered.slice(start, end);
   return {
-    organizations: data?.data ?? [],
-    meta: data?.meta,
-    isLoading,
-    mutate,
+    data: paginated,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
   };
 }
