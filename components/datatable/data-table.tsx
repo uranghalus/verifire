@@ -39,6 +39,7 @@ export function DataTable<TData>({
                                             style={{
                                                 ...getCommonPinningStyles({ column: header.column })
                                             }}
+                                            className='w-fit'
                                         >
                                             {header.isPlaceholder
                                                 ? null
