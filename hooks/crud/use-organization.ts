@@ -1,10 +1,16 @@
 'use server';
 
+import { organizationSchema } from '@/app/(main)/organizations/data/schema';
 import { auth } from '@/lib/auth';
 import { getServerSession } from '@/lib/get-session';
+import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
-
+type ActionState =
+  | { status: 'success' }
+  | { status: 'error'; message: string }
+  | null;
 type Params = {
+  id?: string;
   page?: number;
   limit?: number;
   name?: string;
@@ -42,4 +48,59 @@ export async function getOrganization({
       totalPages: Math.ceil(total / limit),
     },
   };
+}
+export async function createOrganization(
+  _prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const parsed = organizationSchema.safeParse({
+    name: formData.get('name'),
+    slug: formData.get('slug'),
+  });
+
+  if (!parsed.success) {
+    return { status: 'error', message: 'Validasi gagal' };
+  }
+
+  try {
+    await auth.api.createOrganization({
+      body: parsed.data,
+      headers: await headers(),
+    });
+
+    return { status: 'success' };
+  } catch (e: any) {
+    return {
+      status: 'error',
+      message: e?.message ?? 'Gagal membuat organization',
+    };
+  }
+}
+
+export async function deleteOrganization({ id }: { id: string }) {
+  try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return {
+        success: false,
+        message: 'Unauthorized',
+      };
+    }
+
+    await auth.api.deleteOrganization({
+      body: { organizationId: id },
+      headers: await headers(),
+    });
+    // 🔥 PENTING: revalidate server component
+    revalidatePath('/organizations');
+    return {
+      success: true,
+      message: 'Organization berhasil dihapus',
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || 'Gagal menghapus organization',
+    };
+  }
 }

@@ -39,7 +39,7 @@ export function DataTable<TData>({
                                             style={{
                                                 ...getCommonPinningStyles({ column: header.column })
                                             }}
-                                            className='w-fit'
+                                            className='whitespace-nowrap table-fixed'
                                         >
                                             {header.isPlaceholder
                                                 ? null
@@ -65,6 +65,7 @@ export function DataTable<TData>({
                                                 style={{
                                                     ...getCommonPinningStyles({ column: cell.column })
                                                 }}
+                                                className='h-11'
                                             >
                                                 {flexRender(
                                                     cell.column.columnDef.cell,

@@ -6,36 +6,32 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/datatable/datatable-column-header";
 import { cn } from "@/lib/utils";
 import { Text } from "lucide-react";
+import OrganizationAction from "./organization-action";
 
 export const columns: ColumnDef<Organization>[] = [
     {
         id: "select",
         header: ({ table }) => (
-            <div className="w-[24px]">
-                <Checkbox
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
-                    className='translate-y-0.5'
-                />
-            </div>
+            <Checkbox
+                checked={
+                    table.getIsAllPageRowsSelected() ||
+                    (table.getIsSomePageRowsSelected() && "indeterminate")
+                }
+                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                aria-label="Select all"
+
+            />
         ),
-        meta: {
-            className: cn('max-md:sticky start-0 z-10 rounded-tl-[inherit]'),
-        } as any,
         cell: ({ row }) => (
             <Checkbox
                 checked={row.getIsSelected()}
                 onCheckedChange={(value) => row.toggleSelected(!!value)}
                 aria-label="Select row"
-                className='translate-y-0.5'
             />
         ),
         enableSorting: false,
         enableHiding: false,
+        size: 0
     },
     {
         accessorKey: "name",
@@ -43,17 +39,24 @@ export const columns: ColumnDef<Organization>[] = [
             <DataTableColumnHeader column={column} title="Name" />
         ),
         cell: ({ cell }) => {
-
-            return <div className="font-medium ps-2 text-nowrap w-32">{cell.getValue<Organization['name']>()}</div>
+            return <div className="font-medium ps-2">{cell.getValue<Organization['name']>()}</div>
         },
         meta: { label: "Organization Name", placeholder: "Search OrganizationName", variant: 'text', icon: Text },
         enableColumnFilter: true,
+        size: 250
     },
     {
         accessorKey: "slug",
-        header: "Slug",
-        cell: ({ getValue }) => (
-            <div className="font-medium">{getValue<string>()}</div>
+        header: ({ column }: { column: Column<Organization, unknown> }) => (
+            <DataTableColumnHeader column={column} title="Slug" />
         ),
+        cell: ({ cell }) => {
+            return <div className="font-medium ps-2">{cell.getValue<Organization['slug']>()}</div>
+        },
+        size: 500
     },
+    {
+        id: 'action',
+        cell: ({ row }) => <OrganizationAction row={row} />
+    }
 ];

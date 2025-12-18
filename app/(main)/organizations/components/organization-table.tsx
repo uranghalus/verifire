@@ -34,8 +34,10 @@ export default function OrganizationTable<TData, TValue>({
         rows: table.getRowModel().rows.length,
     });
     return (
-        <DataTable table={table} >
-            <DataTableToolbar table={table} />
-        </DataTable>
+        <div className="p-3 rounded-md border">
+            <DataTable table={table} >
+                <DataTableToolbar table={table} />
+            </DataTable>
+        </div>
     );
 }
