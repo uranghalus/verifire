@@ -11,10 +11,15 @@ export default async function OrganizationList() {
     const limit = Number(searchParamsCache.get('perPage') ?? 10);
     const search = String(searchParamsCache.get('name') ?? '');
 
-    const data = await getOrganization({
+    const filters = {
         page,
-        limit,
-        search,
+        limit: limit,
+        ...(search && { search })
+    };
+    const data = await getOrganization({
+        page: filters.page,
+        limit: filters.limit,
+        name: filters.search
     });
     const totalOrganizations = data.meta.total;
     const organizations: Organization[] = data.data

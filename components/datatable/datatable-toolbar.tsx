@@ -12,6 +12,7 @@ import { DataTableViewOptions } from './datatable-view-options';
 import { DataTableFacetedFilter } from './datatable-faceted-filter';
 import { DataTableDateFilter } from './data-table-date-filter';
 import { DataTableSliderFilter } from './datat-table-slider-filter';
+import { useQueryState } from 'nuqs';
 
 
 interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
@@ -25,7 +26,7 @@ export function DataTableToolbar<TData>({
     ...props
 }: DataTableToolbarProps<TData>) {
     const isFiltered = table.getState().columnFilters.length > 0;
-
+    const [, setName] = useQueryState('name');
     const columns = React.useMemo(
         () => table.getAllColumns().filter((column) => column.getCanFilter()),
         [table]
@@ -33,7 +34,8 @@ export function DataTableToolbar<TData>({
 
     const onReset = React.useCallback(() => {
         table.resetColumnFilters();
-    }, [table]);
+        setName(null);
+    }, [table, setName]);
 
     return (
         <div
@@ -78,74 +80,75 @@ function DataTableToolbarFilter<TData>({
 }: DataTableToolbarFilterProps<TData>) {
     {
         const columnMeta = column.columnDef.meta;
+        const [queryValue, setQueryValue] = useQueryState(column.id);
+        if (!columnMeta?.variant) return null;
 
-        const onFilterRender = React.useCallback(() => {
-            if (!columnMeta?.variant) return null;
+        switch (columnMeta.variant) {
+            case 'text':
+                return (
+                    <Input
+                        placeholder={columnMeta.placeholder ?? columnMeta.label}
+                        value={queryValue ?? ''}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            setQueryValue(value || null); // update URL
+                            column.setFilterValue(value); // optional (UI only)
+                        }}
+                        className='h-8 w-40 lg:w-56'
+                    />
+                );
 
-            switch (columnMeta.variant) {
-                case 'text':
-                    return (
+            case 'number':
+                return (
+                    <div className='relative'>
                         <Input
+                            type='number'
+                            inputMode='numeric'
                             placeholder={columnMeta.placeholder ?? columnMeta.label}
                             value={(column.getFilterValue() as string) ?? ''}
                             onChange={(event) => column.setFilterValue(event.target.value)}
-                            className='h-8 w-40 lg:w-56'
+                            className={cn('h-8 w-[120px]', columnMeta.unit && 'pr-8')}
                         />
-                    );
+                        {columnMeta.unit && (
+                            <span className='bg-accent text-muted-foreground absolute top-0 right-0 bottom-0 flex items-center rounded-r-md px-2 text-sm'>
+                                {columnMeta.unit}
+                            </span>
+                        )}
+                    </div>
+                );
 
-                case 'number':
-                    return (
-                        <div className='relative'>
-                            <Input
-                                type='number'
-                                inputMode='numeric'
-                                placeholder={columnMeta.placeholder ?? columnMeta.label}
-                                value={(column.getFilterValue() as string) ?? ''}
-                                onChange={(event) => column.setFilterValue(event.target.value)}
-                                className={cn('h-8 w-[120px]', columnMeta.unit && 'pr-8')}
-                            />
-                            {columnMeta.unit && (
-                                <span className='bg-accent text-muted-foreground absolute top-0 right-0 bottom-0 flex items-center rounded-r-md px-2 text-sm'>
-                                    {columnMeta.unit}
-                                </span>
-                            )}
-                        </div>
-                    );
+            case 'range':
+                return (
+                    <DataTableSliderFilter
+                        column={column}
+                        title={columnMeta.label ?? column.id}
+                    />
+                );
 
-                case 'range':
-                    return (
-                        <DataTableSliderFilter
-                            column={column}
-                            title={columnMeta.label ?? column.id}
-                        />
-                    );
+            case 'date':
+            case 'dateRange':
+                return (
+                    <DataTableDateFilter
+                        column={column}
+                        title={columnMeta.label ?? column.id}
+                        multiple={columnMeta.variant === 'dateRange'}
+                    />
+                );
 
-                case 'date':
-                case 'dateRange':
-                    return (
-                        <DataTableDateFilter
-                            column={column}
-                            title={columnMeta.label ?? column.id}
-                            multiple={columnMeta.variant === 'dateRange'}
-                        />
-                    );
+            case 'select':
+            case 'multiSelect':
+                return (
+                    <DataTableFacetedFilter
+                        column={column}
+                        title={columnMeta.label ?? column.id}
+                        options={columnMeta.options ?? []}
+                        multiple={columnMeta.variant === 'multiSelect'}
+                    />
+                );
 
-                case 'select':
-                case 'multiSelect':
-                    return (
-                        <DataTableFacetedFilter
-                            column={column}
-                            title={columnMeta.label ?? column.id}
-                            options={columnMeta.options ?? []}
-                            multiple={columnMeta.variant === 'multiSelect'}
-                        />
-                    );
+            default:
+                return null;
+        }
 
-                default:
-                    return null;
-            }
-        }, [column, columnMeta]);
-
-        return onFilterRender();
     }
 }

@@ -7,13 +7,13 @@ import { headers } from 'next/headers';
 type Params = {
   page?: number;
   limit?: number;
-  search?: string;
+  name?: string;
 };
 
 export async function getOrganization({
   page = 1,
   limit = 10,
-  search = '',
+  name = '',
 }: Params) {
   const session = await getServerSession();
   if (!session?.user) {
@@ -23,9 +23,9 @@ export async function getOrganization({
     headers: await headers(),
   });
   // 2️⃣ Search (manual)
-  const filtered = search
+  const filtered = name
     ? organizations.filter((org) =>
-        org.name.toLowerCase().includes(search.toLowerCase())
+        org.name.toLowerCase().includes(name.toLowerCase())
       )
     : organizations;
   // 3️⃣ Pagination (manual)

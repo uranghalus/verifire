@@ -34,7 +34,7 @@ export default function OrganizationTable<TData, TValue>({
         rows: table.getRowModel().rows.length,
     });
     return (
-        <DataTable table={table}>
+        <DataTable table={table} >
             <DataTableToolbar table={table} />
         </DataTable>
     );
