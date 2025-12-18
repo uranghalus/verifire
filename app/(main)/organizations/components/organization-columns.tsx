@@ -11,7 +11,7 @@ export const columns: ColumnDef<Organization>[] = [
     {
         id: "select",
         header: ({ table }) => (
-            <div className="w-fit bg-red-400">
+            <div className="w-[24px]">
                 <Checkbox
                     checked={
                         table.getIsAllPageRowsSelected() ||
