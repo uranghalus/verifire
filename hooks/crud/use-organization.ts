@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use server';
 
 import { organizationSchema } from '@/app/(main)/organizations/data/schema';
@@ -6,7 +7,7 @@ import { getServerSession } from '@/lib/get-session';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 type ActionState =
-  | { status: 'success' }
+  | { status: 'success'; message?: string }
   | { status: 'error'; message: string }
   | null;
 type Params = {
@@ -68,11 +69,45 @@ export async function createOrganization(
       headers: await headers(),
     });
 
+    revalidatePath('/organizations');
     return { status: 'success' };
   } catch (e: any) {
     return {
       status: 'error',
       message: e?.message ?? 'Gagal membuat organization',
+    };
+  }
+}
+
+export async function updateOrganization(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const id = formData.get('id') as string;
+  const parsed = organizationSchema.safeParse({
+    name: formData.get('name'),
+    slug: formData.get('slug'),
+  });
+  if (!id || !parsed.success) {
+    return { status: 'error', message: 'Data tidak valid' };
+  }
+  try {
+    const data = await auth.api.updateOrganization({
+      body: {
+        data: {
+          name: parsed.data.name,
+          slug: parsed.data.slug,
+        },
+        organizationId: id,
+      },
+      headers: await headers(),
+    });
+    revalidatePath('/organizations');
+    return { status: 'success', message: 'Organization berhasil diupdate' };
+  } catch (error: any) {
+    return {
+      status: 'error',
+      message: error?.message ?? 'Gagal mengupdate organization',
     };
   }
 }

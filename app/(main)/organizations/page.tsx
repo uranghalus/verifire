@@ -7,6 +7,7 @@ import { DialogProvider } from "@/context/dialog-provider";
 import { Main } from "@/components/main";
 import OrganizationDialog from "./components/organization-dialog";
 import { Metadata } from "next";
+import OrganizationPrimaryButton from "./components/organization-primary-button";
 
 
 type pageProps = {
@@ -30,7 +31,7 @@ export default async function OrganizationsPage(props: pageProps) {
               Manajemen unit bisnis
             </p>
           </div>
-          {/* <UsersPrimaryButtons /> */}
+          <OrganizationPrimaryButton />
         </div>
         <Suspense fallback={<DataTableSkeleton columnCount={4} rowCount={9} filterCount={2} />}>
           <OrganizationList />
