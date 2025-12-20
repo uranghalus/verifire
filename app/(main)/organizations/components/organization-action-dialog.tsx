@@ -112,24 +112,20 @@ export function OrganizationActionDialog({
                         <FormField
                             control={form.control}
                             name="name"
-                            render={({ }) => (
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Name</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    {...field}
-                                                    value={field.value ?? ''}
-                                                    onChange={(e) => autoSlug.onNameChange(e.target.value)}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            {...field}
+                                            value={field.value ?? ''}
+                                            onChange={(e) =>
+                                                autoSlug.onNameChange(e.target.value)
+                                            }
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )}
                         />
 

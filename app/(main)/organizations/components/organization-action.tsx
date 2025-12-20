@@ -6,6 +6,7 @@ import { SquarePen, Trash2, Users } from 'lucide-react'
 import React from 'react'
 import { Organization } from '../types/organization'
 import { Row } from '@tanstack/react-table'
+import Link from 'next/link'
 
 interface Props {
     row: Row<Organization>
@@ -18,7 +19,7 @@ export default function OrganizationAction({ row }: Props) {
                 setCurrentRow(row.original)
                 setOpen('edit')
             }}><SquarePen /></Button>
-            <Button variant='outline' size={'icon'} className='text-[#434656]'><Users /></Button>
+            <Button variant='outline' size={'icon'} className='text-[#434656]' asChild><Link href={`/organization/members/${row.original.id}`}><Users /></Link></Button>
             <Button variant='outline' size={'icon'} className='text-[#ec486a]' onClick={() => {
                 setCurrentRow(row.original)
                 setOpen('delete')
