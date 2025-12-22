@@ -8,7 +8,7 @@ export default function OrganizationPrimaryButton() {
     const { setOpen } = useDialog()
     return (
         <Button className="space-x-1" onClick={() => setOpen('add')}>
-            <span>Tambah Karyawan</span>
+            <span>Tambah Data</span>
             <Plus className="h-4 w-4" />
         </Button>
     )
