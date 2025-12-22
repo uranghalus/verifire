@@ -54,7 +54,13 @@ export async function createOrganization(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const session = await getServerSession();
+  if (!session?.user) {
+    throw new Error('Unauthorized');
+  }
+
   const parsed = organizationSchema.safeParse({
+    id: session.user.id,
     name: formData.get('name'),
     slug: formData.get('slug'),
   });
@@ -65,7 +71,11 @@ export async function createOrganization(
 
   try {
     await auth.api.createOrganization({
-      body: parsed.data,
+      body: {
+        name: parsed.data.name,
+        slug: parsed.data.slug,
+        userId: parsed.data.id,
+      },
       headers: await headers(),
     });
 

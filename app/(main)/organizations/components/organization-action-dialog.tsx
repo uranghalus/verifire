@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
@@ -31,6 +31,7 @@ import {
 } from '@/hooks/crud/use-organization'
 import { Organization } from '../types/organization'
 import { useAutoSlug } from '@/hooks/use-auto-slug'
+import { useRouter } from 'next/navigation'
 
 interface Props {
     currentRow?: Organization | null
@@ -44,7 +45,8 @@ export function OrganizationActionDialog({
     currentRow,
 }: Props) {
     const isEdit = !!currentRow
-
+    const hasRefreshed = useRef(false)
+    const router = useRouter()
     const action = isEdit
         ? updateOrganization
         : createOrganization
@@ -84,11 +86,15 @@ export function OrganizationActionDialog({
 
     // close on success
     useEffect(() => {
-        if (state?.status === 'success') {
+        if (state?.status === 'success' && !hasRefreshed.current) {
+            hasRefreshed.current = true
+
             form.reset()
             onOpenChange(false)
+
+            router.refresh()
         }
-    }, [state, form, onOpenChange])
+    }, [state, form, onOpenChange, router])
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

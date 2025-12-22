@@ -3,7 +3,6 @@ import OrganizationList from "./components/organization-list";
 import { searchParamsCache } from "@/lib/searchparams";
 import { Suspense } from "react";
 import { DataTableSkeleton } from "@/components/datatable/data-table-skeleton";
-import { DialogProvider } from "@/context/dialog-provider";
 import { Main } from "@/components/main";
 import OrganizationDialog from "./components/organization-dialog";
 import { Metadata } from "next";
@@ -19,25 +18,31 @@ export const metadata: Metadata = {
 
 export default async function OrganizationsPage(props: pageProps) {
   const searchParams = await props.searchParams;
-  // Allow nested RSCs to access the search params (in a type-safe way)
   searchParamsCache.parse(searchParams);
+
   return (
-    <DialogProvider>
-      <Main fluid className="space-y-4">
-        <div className='flex flex-wrap items-end justify-between gap-2'>
-          <div>
-            <h2 className='text-2xl font-bold tracking-tight'>Unit Bisnis</h2>
-            <p className='text-muted-foreground'>
-              Manajemen unit bisnis
-            </p>
-          </div>
-          <OrganizationPrimaryButton />
+    <Main fluid className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Unit Bisnis</h2>
+          <p className="text-muted-foreground">Manajemen unit bisnis</p>
         </div>
-        <Suspense fallback={<DataTableSkeleton columnCount={4} rowCount={9} filterCount={2} />}>
-          <OrganizationList />
-        </Suspense>
-        <OrganizationDialog />
-      </Main>
-    </DialogProvider>
+        <OrganizationPrimaryButton />
+      </div>
+
+      <Suspense
+        fallback={
+          <DataTableSkeleton
+            columnCount={4}
+            rowCount={9}
+            filterCount={2}
+          />
+        }
+      >
+        <OrganizationList />
+      </Suspense>
+
+      <OrganizationDialog />
+    </Main>
   );
 }

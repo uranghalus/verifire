@@ -37,7 +37,10 @@ export default function OrganizationDeleteDialog({ currentRow, onOpenChange, ope
                     }
                 },
                 error: (error) => error.message || "Gagal menghapus data",
-                finally: () => setLoading(false),
+                finally: () => {
+                    setLoading(false)
+                    onOpenChange(false)
+                },
             }
         )
     }
